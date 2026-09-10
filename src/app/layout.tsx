@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Themefisher Admin Tools",
   description: "Themefisher Admin Tools – Invoice & Form-C Generator and SCB Bulk Transaction Generator",
+  openGraph: {
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

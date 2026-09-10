@@ -77,14 +77,14 @@ function GenerateDocsContent() {
     <div className="max-w-6xl mx-auto space-y-8 pb-16">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Generate Documents</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Generate Inward Docs</h1>
           <p className="text-sm text-gray-500 mt-1">
             Generate and export pixel-perfect Bank Invoices and Form-C (ICT) declarations.
           </p>
         </div>
         <Link
           href="/invoice-tools/create-invoice"
-          className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-lg border border-blue-200 transition-colors shrink-0"
+          className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-blue-200 transition-colors shrink-0"
         >
           <span>Create New Invoice</span>
           <ArrowRight className="w-4 h-4" />
@@ -110,7 +110,7 @@ function GenerateDocsContent() {
             value={selectedInvoiceId}
             onChange={(e) => setSelectedInvoiceId(e.target.value)}
             disabled={!selectedClientId}
-            className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 focus:outline-hidden"
+            className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 focus:outline-hidden"
           >
             <option value="">-- Choose an Invoice --</option>
             {filteredInvoices.map((i) => (
@@ -130,7 +130,7 @@ function GenerateDocsContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab("all")}
-                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === "all"
                     ? "bg-gray-900 text-white shadow-xs"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -141,7 +141,7 @@ function GenerateDocsContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab("invoice")}
-                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === "invoice"
                     ? "bg-gray-900 text-white shadow-xs"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -152,7 +152,7 @@ function GenerateDocsContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab("cform")}
-                className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTab === "cform"
                     ? "bg-gray-900 text-white shadow-xs"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -167,7 +167,7 @@ function GenerateDocsContent() {
                 <button
                   type="button"
                   onClick={() => handlePrintBankInvoice()}
-                  className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium shadow-xs transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium shadow-xs transition-colors cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   Print Invoice
@@ -177,7 +177,7 @@ function GenerateDocsContent() {
                 <button
                   type="button"
                   onClick={() => handlePrintCForm()}
-                  className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium shadow-xs transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium shadow-xs transition-colors cursor-pointer"
                 >
                   <FileText className="w-4 h-4" />
                   Print Form-C
@@ -197,7 +197,7 @@ function GenerateDocsContent() {
                 <button
                   type="button"
                   onClick={() => handlePrintBankInvoice()}
-                  className="bg-blue-600 text-white px-3.5 py-1.5 rounded-lg shadow-xs hover:bg-blue-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  className="bg-blue-600 text-white px-3.5 py-1.5 rounded-xl shadow-xs hover:bg-blue-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Print / Save PDF
@@ -230,7 +230,7 @@ function GenerateDocsContent() {
                 <button
                   type="button"
                   onClick={() => handlePrintCForm()}
-                  className="bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg shadow-xs hover:bg-emerald-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  className="bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl shadow-xs hover:bg-emerald-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Print / Save PDF

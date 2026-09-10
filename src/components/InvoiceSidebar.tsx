@@ -10,8 +10,8 @@ export function InvoiceSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const links = [
-    { name: 'Generate Docs', href: '/invoice-tools', icon: FileText },
     { name: 'Create Invoice', href: '/invoice-tools/create-invoice', icon: PlusSquare },
+    { name: 'Generate Inward Docs', href: '/invoice-tools', icon: FileText },
     { name: 'Clients', href: '/invoice-tools/clients', icon: Users },
     { name: 'Configuration', href: '/invoice-tools/settings', icon: Settings },
   ]

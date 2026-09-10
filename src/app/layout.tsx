@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Business Finance & Banking Suite",
-  description: "Unified Suite for Inward Remittance Form-C, Invoicing, and SCB Bulk Transaction Excel Generation",
+  title: "Themefisher Admin Tools",
+  description: "Themefisher Admin Tools – Invoice & Form-C Generator and SCB Bulk Transaction Generator",
 };
 
 export default function RootLayout({

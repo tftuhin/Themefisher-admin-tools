@@ -76,10 +76,10 @@ export default function SCBSidebar() {
               key={item.href}
               href={item.href}
               onClick={closeMobile}
-              className={`group flex items-center px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`group flex items-center px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98] ${
                 isActive
                   ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-100/80 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent"
               }`}
             >
               <Icon

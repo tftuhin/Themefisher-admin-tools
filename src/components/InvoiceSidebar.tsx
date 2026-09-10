@@ -62,10 +62,10 @@ export function InvoiceSidebar() {
               key={link.name}
               href={link.href}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98] ${
                 isActive
                   ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-100/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent'
               }`}
             >
               <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />

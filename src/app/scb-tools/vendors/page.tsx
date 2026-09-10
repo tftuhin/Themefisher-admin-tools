@@ -263,11 +263,11 @@ export default function VendorsPage() {
         </form>
       </div>
 
-      {/* Vendor Pool Container */}
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      {/* Receiver Bank AC Container */}
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden mt-6">
+        <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold">Vendor Pool</h2>
+            <h2 className="text-lg sm:text-xl font-semibold">Receiver Bank AC</h2>
             <p className="text-xs text-gray-500 mt-0.5">
               {vendors.length} {vendors.length === 1 ? "entry" : "entries"} saved
             </p>

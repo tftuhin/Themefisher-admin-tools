@@ -211,7 +211,7 @@ export default function SearchableVendorSelect({
           <ul ref={listRef} role="listbox" className="max-h-56 overflow-y-auto divide-y divide-slate-100 p-1">
             {filteredVendors.length === 0 ? (
               <li className="py-5 px-3 text-center text-xs text-slate-400">
-                {searchQuery ? `No receivers matching "${searchQuery}"` : "No receivers in vendor pool"}
+                {searchQuery ? `No receivers matching "${searchQuery}"` : "No receiver bank AC available"}
               </li>
             ) : (
               filteredVendors.map((v, index) => {

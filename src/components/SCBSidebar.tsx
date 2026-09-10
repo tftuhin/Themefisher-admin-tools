@@ -12,7 +12,7 @@ const navItems = [
     icon: FileSpreadsheet,
   },
   {
-    name: "Vendor Pool",
+    name: "Receiver Bank AC",
     href: "/scb-tools/vendors",
     icon: Users,
   },

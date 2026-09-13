@@ -96,9 +96,13 @@ CREATE TABLE IF NOT EXISTS vendors (
   bank_name TEXT NOT NULL,
   branch_name TEXT NOT NULL,
   routing_number TEXT NOT NULL,
+  is_employee BOOLEAN DEFAULT false,
+  salary NUMERIC DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_employee BOOLEAN DEFAULT false;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS salary NUMERIC DEFAULT 0;
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow anonymous read access on vendors" ON vendors FOR SELECT USING (true);

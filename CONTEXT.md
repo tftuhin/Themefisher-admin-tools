@@ -174,6 +174,32 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
 
+### 2026-09-13 22:53 — Added Additional Transactions in Salary Sheet Modal
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/scb-tools/page.tsx` — Added "Additional Transactions" section in the Create Salary Sheet modal, enabling users to add extra transfers (bonuses, vendor invoices, allowances) alongside regular employee salaries; integrated with live total breakdown, SCB Excel export, and "Load into Table".
+**Decisions & notes:**
+- Additional transactions can select any receiver from all available vendors/beneficiaries with custom descriptions and amounts.
+- Total payout displays full breakdown: Employees Subtotal + Additional Subtotal = Grand Total.
+- Validates that all additional rows have a selected receiver and valid amount before Excel download or table population.
+- Kept in local environment (no git push).
+
+---
+
+### 2026-09-13 22:37 — Added Employee Marking & SCB Salary Sheet Generator
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/types/index.ts` — Added `is_employee?: boolean` and `salary?: number | string` to `Vendor` interface.
+- `src/app/scb-tools/vendors/page.tsx` — Added 1-click Employee toggle checkmarks in receiver accounts table/cards, Add/Edit form support for employee marking and default monthly salary, filter tabs (`All`, `Employees`, `Vendors`), and local cache persistence fallback with Supabase sync.
+- `src/app/scb-tools/page.tsx` — Added "Create Salary Sheet" action with dedicated modal to review/input employee salaries, auto-calculate total payroll sums, directly export SCB-formatted Excel spreadsheets (`.xlsx`), or load employee rows into the main generator table.
+- `supabase_schema.sql` — Added schema migration statements for `is_employee` and `salary` columns on `vendors`.
+**Decisions & notes:**
+- Sourced SCB debit accounts directly from database `debit_accounts` table.
+- Dual-layer employee status persistence: attempts Supabase update on `vendors` and caches in `localStorage` (`scb_employee_vendors`), ensuring seamless local functionality even before the remote DB schema is altered.
+- All testing kept in local environment per user instruction (no git push).
+
+---
+
 ### 2026-09-13 11:47 — Added CONTEXT.md & Agent Rules
 **Agent/Dev:** Claude (Opus 4.6)
 **Files changed:**

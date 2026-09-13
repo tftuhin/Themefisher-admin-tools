@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase, isSupabaseConfigured, type Vendor } from "@/lib/supabase";
 import dynamic from "next/dynamic";
 
@@ -18,6 +18,7 @@ import {
   Check,
   Search,
   AlertTriangle,
+  UserCheck,
 } from "lucide-react";
 
 export default function VendorsPage() {
@@ -27,6 +28,7 @@ export default function VendorsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"all" | "employees" | "others">("all");
 
   // Add Form state
   const [formData, setFormData] = useState({
@@ -35,6 +37,8 @@ export default function VendorsPage() {
     bank_name: "",
     branch_name: "",
     routing_number: "",
+    is_employee: false,
+    salary: "",
   });
 
   // Edit State
@@ -45,12 +49,38 @@ export default function VendorsPage() {
     bank_name: "",
     branch_name: "",
     routing_number: "",
+    is_employee: false,
+    salary: "",
   });
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete State
   const [deletingVendor, setDeletingVendor] = useState<Vendor | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Helper to read local employee cache
+  const getLocalEmployeeCache = (): Record<string, { is_employee: boolean; salary?: number }> => {
+    try {
+      const saved = localStorage.getItem("scb_employee_vendors");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  // Helper to write local employee cache
+  const saveLocalEmployeeCache = (id: string, is_employee: boolean, salary?: number | string) => {
+    try {
+      const cache = getLocalEmployeeCache();
+      cache[id] = {
+        is_employee,
+        salary: salary ? Number(salary) : (cache[id]?.salary ?? 0),
+      };
+      localStorage.setItem("scb_employee_vendors", JSON.stringify(cache));
+    } catch (e) {
+      console.error("Failed to write to localStorage:", e);
+    }
+  };
 
   const fetchVendors = async () => {
     if (!isSupabaseConfigured) {
@@ -63,11 +93,21 @@ export default function VendorsPage() {
       .from("vendors")
       .select("*")
       .order("created_at", { ascending: false });
+
     if (error) {
       console.error("Error fetching vendors:", error);
       setErrorMessage(error.message);
     } else {
-      setVendors(data || []);
+      const localCache = getLocalEmployeeCache();
+      const merged: Vendor[] = (data || []).map((v: Vendor) => {
+        const local = localCache[v.id];
+        return {
+          ...v,
+          is_employee: v.is_employee !== undefined ? Boolean(v.is_employee) : Boolean(local?.is_employee),
+          salary: v.salary !== undefined ? v.salary : (local?.salary ?? ""),
+        };
+      });
+      setVendors(merged);
     }
     setLoading(false);
   };
@@ -84,42 +124,120 @@ export default function VendorsPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value, type, checked } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  // Toggle Employee Checkmark directly from Table / Card
+  const handleToggleEmployee = async (vendor: Vendor) => {
+    const nextStatus = !vendor.is_employee;
+
+    // 1. Optimistic UI update
+    setVendors((prev) =>
+      prev.map((v) => (v.id === vendor.id ? { ...v, is_employee: nextStatus } : v))
+    );
+
+    // 2. Persist to localStorage cache
+    saveLocalEmployeeCache(vendor.id, nextStatus, vendor.salary);
+
+    // 3. Persist to Supabase if column exists
+    try {
+      const { error } = await supabase
+        .from("vendors")
+        .update({ is_employee: nextStatus })
+        .eq("id", vendor.id);
+
+      if (error && !error.message?.includes("column")) {
+        console.error("Supabase update error:", error.message);
+      }
+    } catch (e) {
+      console.warn("Could not sync with Supabase column:", e);
+    }
+
+    triggerSuccess(
+      nextStatus
+        ? `Marked "${vendor.receiver_name}" as an employee.`
+        : `Removed "${vendor.receiver_name}" from employees.`
+    );
   };
 
   // Add Vendor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSupabaseConfigured) {
-      alert(
-        "Please connect Supabase first by providing your credentials in .env.local",
-      );
+      alert("Please connect Supabase first by providing your credentials in .env.local");
       return;
     }
     setSaving(true);
     setErrorMessage(null);
-    const { data, error } = await supabase
+
+    const payloadToInsert: Record<string, any> = {
+      receiver_name: formData.receiver_name,
+      account_number: formData.account_number,
+      bank_name: formData.bank_name,
+      branch_name: formData.branch_name,
+      routing_number: formData.routing_number,
+    };
+
+    if (formData.is_employee) {
+      payloadToInsert.is_employee = true;
+    }
+    if (formData.salary) {
+      payloadToInsert.salary = Number(formData.salary);
+    }
+
+    let insertResult = await supabase
       .from("vendors")
-      .insert([formData])
+      .insert([payloadToInsert])
       .select();
 
-    if (error) {
-      console.error(error);
-      setErrorMessage(error.message);
-      alert(`Failed to save vendor: ${error.message}`);
-    } else if (data) {
+    // Fallback if Supabase schema doesn't have is_employee/salary column yet
+    if (
+      insertResult.error &&
+      (insertResult.error.message?.includes("is_employee") ||
+        insertResult.error.message?.includes("salary"))
+    ) {
+      const { is_employee, salary, ...fallbackPayload } = payloadToInsert;
+      insertResult = await supabase
+        .from("vendors")
+        .insert([fallbackPayload])
+        .select();
+    }
+
+    if (insertResult.error) {
+      console.error(insertResult.error);
+      setErrorMessage(insertResult.error.message);
+      alert(`Failed to save vendor: ${insertResult.error.message}`);
+    } else if (insertResult.data && insertResult.data[0]) {
+      const newVendor = insertResult.data[0];
+      // Sync local cache
+      saveLocalEmployeeCache(newVendor.id, formData.is_employee, formData.salary);
+
       setFormData({
         receiver_name: "",
         account_number: "",
         bank_name: "",
         branch_name: "",
         routing_number: "",
+        is_employee: false,
+        salary: "",
       });
-      triggerSuccess("Vendor added successfully!");
+      triggerSuccess(
+        formData.is_employee
+          ? `Added "${newVendor.receiver_name}" as an employee!`
+          : `Vendor "${newVendor.receiver_name}" added successfully!`
+      );
       fetchVendors();
     }
     setSaving(false);
@@ -134,6 +252,8 @@ export default function VendorsPage() {
       bank_name: vendor.bank_name,
       branch_name: vendor.branch_name,
       routing_number: vendor.routing_number,
+      is_employee: Boolean(vendor.is_employee),
+      salary: vendor.salary ? String(vendor.salary) : "",
     });
   };
 
@@ -145,10 +265,40 @@ export default function VendorsPage() {
     setEditSaving(true);
     setErrorMessage(null);
 
-    const { error } = await supabase
+    const updatePayload: Record<string, any> = {
+      receiver_name: editFormData.receiver_name,
+      account_number: editFormData.account_number,
+      bank_name: editFormData.bank_name,
+      branch_name: editFormData.branch_name,
+      routing_number: editFormData.routing_number,
+      is_employee: editFormData.is_employee,
+      salary: editFormData.salary ? Number(editFormData.salary) : 0,
+    };
+
+    let { error } = await supabase
       .from("vendors")
-      .update(editFormData)
+      .update(updatePayload)
       .eq("id", editingVendor.id);
+
+    // Fallback if column missing in Supabase schema
+    if (
+      error &&
+      (error.message?.includes("is_employee") || error.message?.includes("salary"))
+    ) {
+      const { is_employee, salary, ...fallbackPayload } = updatePayload;
+      const retry = await supabase
+        .from("vendors")
+        .update(fallbackPayload)
+        .eq("id", editingVendor.id);
+      error = retry.error;
+    }
+
+    // Always update local cache
+    saveLocalEmployeeCache(
+      editingVendor.id,
+      editFormData.is_employee,
+      editFormData.salary
+    );
 
     if (error) {
       console.error(error);
@@ -156,8 +306,14 @@ export default function VendorsPage() {
     } else {
       setVendors((prev) =>
         prev.map((v) =>
-          v.id === editingVendor.id ? { ...v, ...editFormData } : v,
-        ),
+          v.id === editingVendor.id
+            ? {
+                ...v,
+                ...editFormData,
+                salary: editFormData.salary ? Number(editFormData.salary) : 0,
+              }
+            : v
+        )
       );
       triggerSuccess(`Updated "${editFormData.receiver_name}" successfully!`);
       setEditingVendor(null);
@@ -190,27 +346,41 @@ export default function VendorsPage() {
   };
 
   // Filtered vendors
-  const filteredVendors = vendors.filter((v) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      v.receiver_name.toLowerCase().includes(q) ||
-      v.account_number.toLowerCase().includes(q) ||
-      v.bank_name.toLowerCase().includes(q) ||
-      v.branch_name.toLowerCase().includes(q) ||
-      v.routing_number.toLowerCase().includes(q)
-    );
-  });
+  const employeeCount = useMemo(
+    () => vendors.filter((v) => v.is_employee).length,
+    [vendors]
+  );
+
+  const filteredVendors = useMemo(() => {
+    return vendors.filter((v) => {
+      // Tab filter
+      if (activeTab === "employees" && !v.is_employee) return false;
+      if (activeTab === "others" && v.is_employee) return false;
+
+      // Search query filter
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        v.receiver_name.toLowerCase().includes(q) ||
+        v.account_number.toLowerCase().includes(q) ||
+        v.bank_name.toLowerCase().includes(q) ||
+        v.branch_name.toLowerCase().includes(q) ||
+        v.routing_number.toLowerCase().includes(q)
+      );
+    });
+  }, [vendors, activeTab, searchQuery]);
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Vendor Management
-        </h1>
-        <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">
-          Add, edit, and manage beneficiary bank accounts.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Receiver Bank Accounts
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">
+            Add, edit, and mark employees or vendor beneficiary bank accounts.
+          </p>
+        </div>
       </div>
 
       {/* Success Notification */}
@@ -235,19 +405,7 @@ export default function VendorsPage() {
           <div className="text-xs sm:text-sm">
             <p className="font-semibold">Supabase is not connected yet</p>
             <p className="mt-1">
-              Add your{" "}
-              <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">
-                NEXT_PUBLIC_SUPABASE_URL
-              </code>{" "}
-              and{" "}
-              <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">
-                NEXT_PUBLIC_SUPABASE_ANON_KEY
-              </code>{" "}
-              to your{" "}
-              <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">
-                .env.local
-              </code>{" "}
-              file and restart the dev server.
+              Add your credentials to <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">.env.local</code> and restart the dev server.
             </p>
           </div>
         </div>
@@ -258,29 +416,16 @@ export default function VendorsPage() {
           <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
           <div className="text-xs sm:text-sm">
             <p className="font-semibold">Database Error</p>
-            <p className="mt-1 font-mono text-xs">{errorMessage}</p>
-            {errorMessage.includes("relation") &&
-              errorMessage.includes("vendors") && (
-                <p className="mt-2 text-xs text-red-700">
-                  It looks like the{" "}
-                  <code className="font-mono bg-red-100 px-1 rounded">
-                    vendors
-                  </code>{" "}
-                  table doesn&apos;t exist yet. Please run the SQL in{" "}
-                  <code className="font-mono bg-red-100 px-1 rounded">
-                    supabase-schema.sql
-                  </code>{" "}
-                  in your Supabase SQL Editor.
-                </p>
-              )}
+            <p className="mt-1">{errorMessage}</p>
           </div>
         </div>
       )}
 
-      {/* Add New Vendor Form */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border-slate-200 shadow-xs border">
-        <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
-          Add New Vendor
+      {/* Add New Receiver Form */}
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xs border border-slate-200">
+        <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900 flex items-center gap-2">
+          <Plus className="w-5 h-5 text-blue-600" />
+          Add New Receiver Account
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -288,7 +433,7 @@ export default function VendorsPage() {
         >
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-              Receiver Name
+              Receiver / Employee Name *
             </label>
             <input
               required
@@ -297,12 +442,12 @@ export default function VendorsPage() {
               value={formData.receiver_name}
               onChange={handleChange}
               className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="John Doe"
+              placeholder="e.g. John Doe"
             />
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-              Account Number
+              Account Number *
             </label>
             <input
               required
@@ -310,10 +455,11 @@ export default function VendorsPage() {
               name="account_number"
               value={formData.account_number}
               onChange={handleChange}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
               placeholder="1234567890"
             />
           </div>
+
           <BankBranchSelect
             bankName={formData.bank_name}
             branchName={formData.branch_name}
@@ -322,113 +468,228 @@ export default function VendorsPage() {
             onBranchChange={(val) => setFormData((prev) => ({ ...prev, branch_name: val }))}
             onRoutingChange={(val) => setFormData((prev) => ({ ...prev, routing_number: val }))}
           />
-          <div className="sm:col-span-2 lg:col-span-1 flex items-end">
+
+          {/* Employee Option & Default Salary */}
+          <div className="sm:col-span-2 lg:col-span-3 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  name="is_employee"
+                  checked={formData.is_employee}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <span className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  Mark as Employee (Included in Salary Sheets)
+                </span>
+              </label>
+
+              {formData.is_employee && (
+                <div className="inline-flex items-center gap-2">
+                  <label className="text-xs sm:text-sm text-gray-600 font-medium whitespace-nowrap">
+                    Default Salary (BDT):
+                  </label>
+                  <input
+                    type="number"
+                    name="salary"
+                    value={formData.salary}
+                    onChange={handleChange}
+                    placeholder="e.g. 50000"
+                    className="w-36 border border-slate-200 rounded-xl px-3 py-1.5 text-sm focus:ring-blue-500 focus:border-blue-500 font-mono"
+                  />
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center font-medium transition-colors text-sm"
+              className="bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center font-medium transition-colors text-sm shadow-sm shrink-0"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Plus className="w-4 h-4 mr-2" />
               )}
-              Save Vendor
+              Save Receiver
             </button>
           </div>
         </form>
       </div>
 
       {/* Receiver Bank AC Container */}
-      <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden mt-6">
-        <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold">
-              Receiver Bank AC
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden mt-6">
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-200 bg-slate-50/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+              Receivers List
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {vendors.length} {vendors.length === 1 ? "entry" : "entries"}{" "}
-              saved
-            </p>
+            <span className="text-xs bg-slate-200/80 text-slate-700 px-2.5 py-0.5 rounded-full font-medium">
+              {vendors.length} Total
+            </span>
           </div>
 
-          {/* Search Box */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search vendors..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 sm:py-1.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-            {searchQuery && (
+          {/* Filter Tabs & Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            {/* Filter Tabs */}
+            <div className="inline-flex p-1 bg-slate-200/70 rounded-xl text-xs font-medium self-start sm:self-auto">
               <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                type="button"
+                onClick={() => setActiveTab("all")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeTab === "all"
+                    ? "bg-white text-gray-900 shadow-xs font-semibold"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
               >
-                <X className="w-3.5 h-3.5" />
+                All ({vendors.length})
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setActiveTab("employees")}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  activeTab === "employees"
+                    ? "bg-white text-emerald-700 shadow-xs font-semibold"
+                    : "text-gray-600 hover:text-emerald-700"
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Employees ({employeeCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("others")}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeTab === "others"
+                    ? "bg-white text-gray-900 shadow-xs font-semibold"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Vendors ({vendors.length - employeeCount})
+              </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search receivers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Loading State */}
         {loading ? (
-          <div className="p-8 text-center text-gray-500">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
-            Loading vendors...
+          <div className="p-12 text-center text-gray-500">
+            <Loader2 className="w-7 h-7 animate-spin mx-auto mb-2 text-blue-600" />
+            Loading receiver accounts...
           </div>
         ) : vendors.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No vendors found. Add one above.
+          <div className="p-12 text-center text-gray-500">
+            No receivers found. Add one using the form above.
           </div>
         ) : filteredVendors.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No vendors match &ldquo;{searchQuery}&rdquo;.
+          <div className="p-12 text-center text-gray-500">
+            No receivers match the selected filter or search query.
           </div>
         ) : (
           <>
-            {/* Desktop Table View (Visible on md and up) */}
+            {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-700 border-b">
+                <thead className="bg-gray-50/80 text-gray-700 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-3 font-semibold">Receiver Name</th>
-                    <th className="px-6 py-3 font-semibold">Account Number</th>
-                    <th className="px-6 py-3 font-semibold">Bank Name</th>
-                    <th className="px-6 py-3 font-semibold">Branch Name</th>
-                    <th className="px-6 py-3 font-semibold">Routing Number</th>
-                    <th className="px-6 py-3 font-semibold text-right">
-                      Actions
+                    <th className="px-5 py-3 font-semibold">Receiver Name</th>
+                    <th className="px-4 py-3 font-semibold text-center w-36">
+                      Employee Status
                     </th>
+                    <th className="px-5 py-3 font-semibold">Account Number</th>
+                    <th className="px-5 py-3 font-semibold">Bank Name</th>
+                    <th className="px-5 py-3 font-semibold">Branch Name</th>
+                    <th className="px-5 py-3 font-semibold">Routing Number</th>
+                    <th className="px-5 py-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-slate-100">
                   {filteredVendors.map((v) => (
                     <tr
                       key={v.id}
-                      className="hover:bg-gray-50/80 transition-colors"
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        v.is_employee ? "bg-emerald-50/20" : ""
+                      }`}
                     >
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {v.receiver_name}
+                      <td className="px-5 py-3.5 font-medium text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <span>{v.receiver_name}</span>
+                          {v.salary ? (
+                            <span className="text-[11px] text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded border">
+                              ৳{Number(v.salary).toLocaleString()}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-gray-700">
+
+                      {/* Employee Toggle Checkmark Column */}
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleEmployee(v)}
+                          title={
+                            v.is_employee
+                              ? "Click to unmark as employee"
+                              : "Click to mark as employee"
+                          }
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                            v.is_employee
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200"
+                              : "bg-gray-100 text-gray-500 border border-gray-200 hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50"
+                          }`}
+                        >
+                          {v.is_employee ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                              <span>Employee</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-gray-300" />
+                              <span>Mark Employee</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+
+                      <td className="px-5 py-3.5 font-mono text-xs text-gray-700">
                         {v.account_number}
                       </td>
-                      <td className="px-6 py-4 text-gray-700">{v.bank_name}</td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {v.branch_name}
+                      <td className="px-5 py-3.5 text-gray-700">{v.bank_name}</td>
+                      <td className="px-5 py-3.5 text-gray-600">
+                        {v.branch_name || "—"}
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-gray-700">
-                        {v.routing_number}
+                      <td className="px-5 py-3.5 font-mono text-xs text-gray-700">
+                        {v.routing_number || "—"}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleStartEdit(v)}
                             className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                            title="Edit vendor"
+                            title="Edit receiver"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                             Edit
@@ -436,7 +697,7 @@ export default function VendorsPage() {
                           <button
                             onClick={() => setDeletingVendor(v)}
                             className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                            title="Delete vendor"
+                            title="Delete receiver"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             Delete
@@ -449,53 +710,85 @@ export default function VendorsPage() {
               </table>
             </div>
 
-            {/* Mobile Card List View (Visible on screens smaller than md) */}
-            <div className="md:hidden divide-y">
+            {/* Mobile Card List View */}
+            <div className="md:hidden divide-y divide-slate-100">
               {filteredVendors.map((v) => (
                 <div
                   key={v.id}
-                  className="p-4 space-y-3 hover:bg-gray-50/70 transition-colors"
+                  className={`p-4 space-y-3 transition-colors ${
+                    v.is_employee ? "bg-emerald-50/25" : "hover:bg-gray-50/70"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">
-                        {v.receiver_name}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          {v.receiver_name}
+                        </h3>
+                      </div>
                       <div className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-100">
                         {v.bank_name || "Bank Not Specified"}
                       </div>
                     </div>
+
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleStartEdit(v)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-xl border border-blue-100 transition-colors"
-                        title="Edit vendor"
+                        title="Edit receiver"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeletingVendor(v)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-xl border border-red-100 transition-colors"
-                        title="Delete vendor"
+                        title="Delete receiver"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
+                  {/* Employee Toggle on Mobile */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleEmployee(v)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                        v.is_employee
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-gray-100 text-gray-600 border border-gray-200"
+                      }`}
+                    >
+                      {v.is_employee ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Marked as Employee</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-gray-300" />
+                          <span>Not Employee (Tap to mark)</span>
+                        </>
+                      )}
+                    </button>
+
+                    {v.salary ? (
+                      <span className="text-xs font-mono text-gray-600">
+                        Salary: ৳{Number(v.salary).toLocaleString()}
+                      </span>
+                    ) : null}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                     <div>
-                      <span className="text-gray-500 block">
-                        Account Number
-                      </span>
+                      <span className="text-gray-500 block">Account Number</span>
                       <span className="font-mono text-gray-800 font-medium break-all">
                         {v.account_number}
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-500 block">
-                        Routing Number
-                      </span>
+                      <span className="text-gray-500 block">Routing Number</span>
                       <span className="font-mono text-gray-800 font-medium">
                         {v.routing_number || "—"}
                       </span>
@@ -521,10 +814,10 @@ export default function VendorsPage() {
             <div className="p-4 sm:p-6 border-b flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Edit Vendor
+                  Edit Receiver Account
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Modify beneficiary banking information.
+                  Modify beneficiary banking and employee status.
                 </p>
               </div>
               <button
@@ -539,7 +832,7 @@ export default function VendorsPage() {
               <div className="p-4 sm:p-6 space-y-3.5 sm:space-y-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Receiver Name
+                    Receiver / Employee Name
                   </label>
                   <input
                     required
@@ -550,6 +843,7 @@ export default function VendorsPage() {
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
@@ -561,7 +855,7 @@ export default function VendorsPage() {
                       name="account_number"
                       value={editFormData.account_number}
                       onChange={handleEditChange}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
                     />
                   </div>
                   <BankBranchSelect
@@ -572,6 +866,39 @@ export default function VendorsPage() {
                     onBranchChange={(val) => setEditFormData((prev) => ({ ...prev, branch_name: val }))}
                     onRoutingChange={(val) => setEditFormData((prev) => ({ ...prev, routing_number: val }))}
                   />
+                </div>
+
+                {/* Employee checkmark in Edit */}
+                <div className="pt-3 border-t border-slate-100 space-y-3">
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      name="is_employee"
+                      checked={editFormData.is_employee}
+                      onChange={handleEditChange}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-emerald-600" />
+                      Mark as Employee (Included in Salary Sheets)
+                    </span>
+                  </label>
+
+                  {editFormData.is_employee && (
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                        Default Monthly Salary (BDT)
+                      </label>
+                      <input
+                        type="number"
+                        name="salary"
+                        value={editFormData.salary}
+                        onChange={handleEditChange}
+                        placeholder="e.g. 50000"
+                        className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -611,7 +938,7 @@ export default function VendorsPage() {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 text-center">
-                Delete Vendor?
+                Delete Receiver Account?
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 text-center mt-2">
                 Are you sure you want to remove{" "}
@@ -649,7 +976,7 @@ export default function VendorsPage() {
                 ) : (
                   <Trash2 className="w-4 h-4" />
                 )}
-                Delete Vendor
+                Delete Receiver
               </button>
             </div>
           </div>

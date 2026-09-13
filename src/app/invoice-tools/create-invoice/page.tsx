@@ -303,6 +303,7 @@ export default function CreateInvoicePage() {
         setValue("invoice_number", `TF-${dateStr}-01`);
         setValue("invoice_date", dateStr);
         setValue("currency", "USD");
+        setValue("description", "Web development services");
       }
     }
     void fetchData();

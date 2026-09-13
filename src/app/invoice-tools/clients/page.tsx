@@ -163,7 +163,7 @@ export default function ClientsPage() {
               <input
                 {...register("name", { required: true })}
                 maxLength={120}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="Client or company name"
               />
             </div>
@@ -176,7 +176,7 @@ export default function ClientsPage() {
               <input
                 {...register("address")}
                 maxLength={300}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="Full billing address"
               />
             </div>
@@ -189,7 +189,7 @@ export default function ClientsPage() {
               <input
                 {...register("tax_id")}
                 maxLength={50}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="e.g. EU123456789 or Tax ID"
               />
             </div>
@@ -202,7 +202,7 @@ export default function ClientsPage() {
               <input
                 {...register("bank_name")}
                 maxLength={120}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="e.g. Barclays Bank PLC"
               />
             </div>
@@ -215,7 +215,7 @@ export default function ClientsPage() {
               <input
                 {...register("bank_address")}
                 maxLength={250}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="Branch, City & Country"
               />
             </div>
@@ -238,7 +238,7 @@ export default function ClientsPage() {
       <div className="bg-white rounded-2xl shadow-xs border border-gray-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
               <Users className="w-4 h-4" />
             </div>
             <div>
@@ -275,7 +275,7 @@ export default function ClientsPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold text-base text-gray-900 truncate">{client.name}</h3>
                     {client.tax_id && (
-                      <span className="text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md shrink-0">
+                      <span className="text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-lg shrink-0">
                         VAT/Tax ID: {client.tax_id}
                       </span>
                     )}
@@ -306,7 +306,7 @@ export default function ClientsPage() {
                     type="button"
                     onClick={() => handleEditClient(client)}
                     title="Edit Client"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 border border-gray-200 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 border border-gray-200 transition-colors cursor-pointer"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                     <span>Edit</span>
@@ -316,7 +316,7 @@ export default function ClientsPage() {
                     type="button"
                     onClick={() => void deleteClient(client)}
                     title="Delete Client"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete</span>

@@ -149,9 +149,9 @@ export default function GeneratorPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+    <div className="max-w-[1600px] mx-auto space-y-6">
       <div>
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
           SCB Banking Tool
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SCB Transection Generator</h1>
@@ -159,7 +159,7 @@ export default function GeneratorPage() {
       </div>
 
       {/* Debit Account Dropdown Selector */}
-      <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <label htmlFor="debit-account" className="block text-sm font-semibold text-gray-900">
             SCB Debit Account Number *
@@ -174,7 +174,7 @@ export default function GeneratorPage() {
             required
             value={debitAccount}
             onChange={(e) => handleDebitAccountChange(e.target.value)}
-            className="w-full px-3.5 py-2.5 border rounded-lg font-mono text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs cursor-pointer"
+            className="w-full border border-slate-200 rounded-xl px-3 py-2 font-mono text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs cursor-pointer"
           >
             {debitAccounts.length > 0 ? (
               debitAccounts.map((acc) => (
@@ -206,14 +206,14 @@ export default function GeneratorPage() {
           </div>
           <Link
             href="/scb-tools/vendors"
-            className="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg whitespace-nowrap self-start sm:self-auto"
+            className="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-xl whitespace-nowrap self-start sm:self-auto"
           >
             Manage Vendors
           </Link>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-6">
         <div className="space-y-4">
           {rows.map((row, index) => (
             <div key={row.id} className="p-3.5 sm:p-4 border rounded-xl bg-gray-50/70 hover:bg-gray-50 transition-colors space-y-3">
@@ -225,7 +225,7 @@ export default function GeneratorPage() {
                 <button 
                   onClick={() => removeRow(row.id)}
                   disabled={rows.length === 1}
-                  className="p-1 text-red-500 hover:bg-red-50 rounded-md disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
+                  className="p-1 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
                   title="Remove Transfer"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -251,7 +251,7 @@ export default function GeneratorPage() {
                     type="number" 
                     value={row.amount}
                     onChange={(e) => handleRowChange(row.id, "amount", e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
                     placeholder="0.00" 
                   />
                 </div>
@@ -264,7 +264,7 @@ export default function GeneratorPage() {
                     maxLength={100}
                     value={row.description}
                     onChange={(e) => handleRowChange(row.id, "description", e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
                     placeholder="Transfer reason..." 
                   />
                 </div>
@@ -276,7 +276,7 @@ export default function GeneratorPage() {
                     type="date" 
                     value={row.transferDate}
                     onChange={(e) => handleRowChange(row.id, "transferDate", e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
                   />
                 </div>
 
@@ -285,7 +285,7 @@ export default function GeneratorPage() {
                   <button 
                     onClick={() => removeRow(row.id)}
                     disabled={rows.length === 1}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                     title="Remove Row"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -300,7 +300,7 @@ export default function GeneratorPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <button 
               onClick={addRow}
-              className="flex-1 sm:flex-none flex items-center justify-center text-blue-600 hover:text-blue-700 font-medium px-4 py-2.5 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 text-sm"
+              className="flex-1 sm:flex-none flex items-center justify-center text-blue-600 hover:text-blue-700 font-medium px-4 py-2.5 hover:bg-blue-50 rounded-xl transition-colors border border-blue-200 text-sm"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Another Transfer
@@ -308,7 +308,7 @@ export default function GeneratorPage() {
 
             <button 
               onClick={handleReset}
-              className="flex items-center justify-center text-gray-600 hover:text-red-600 font-medium px-3.5 py-2.5 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 hover:border-red-200 text-sm"
+              className="flex items-center justify-center text-gray-600 hover:text-red-600 font-medium px-3.5 py-2.5 hover:bg-red-50 rounded-xl transition-colors border border-gray-200 hover:border-red-200 text-sm"
               title="Reset form and clear all entries"
             >
               <RotateCcw className="w-4 h-4 mr-1.5" />
@@ -318,7 +318,7 @@ export default function GeneratorPage() {
 
           <button 
             onClick={handleGenerateExcel}
-            className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-sm text-sm"
+            className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white px-6 py-2.5 rounded-xl hover:bg-green-700 transition-colors font-semibold shadow-sm text-sm"
           >
             <FileSpreadsheet className="w-5 h-5 mr-2" />
             Generate Excel

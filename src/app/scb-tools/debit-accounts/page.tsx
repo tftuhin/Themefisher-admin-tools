@@ -247,10 +247,10 @@ ON CONFLICT DO NOTHING;`;
   );
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+    <div className="max-w-[1600px] mx-auto space-y-6">
       {/* Header */}
       <div>
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
           Funding Configuration
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Debit Accounts</h1>
@@ -274,7 +274,7 @@ ON CONFLICT DO NOTHING;`;
           <button
             type="button"
             onClick={() => setShowSqlModal(true)}
-            className="text-xs sm:text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg whitespace-nowrap shadow-sm transition-colors"
+            className="text-xs sm:text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl whitespace-nowrap shadow-sm transition-colors"
           >
             View & Copy SQL Script
           </button>
@@ -308,7 +308,7 @@ ON CONFLICT DO NOTHING;`;
       )}
 
       {/* Add New Debit Account Form */}
-      <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-blue-600" />
           Add Debit Account
@@ -329,7 +329,7 @@ ON CONFLICT DO NOTHING;`;
                 value={formData.account_number}
                 onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                 placeholder="e.g. 0001234567890"
-                className="w-full px-3.5 py-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3.5 py-2 border rounded-xl font-mono text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
 
@@ -343,7 +343,7 @@ ON CONFLICT DO NOTHING;`;
                 value={formData.account_label}
                 onChange={(e) => setFormData({ ...formData, account_label: e.target.value })}
                 placeholder="e.g. Main SCB Account"
-                className="w-full px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3.5 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
 
@@ -356,7 +356,7 @@ ON CONFLICT DO NOTHING;`;
                 value={formData.bank_name}
                 onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
                 placeholder="Standard Chartered Bank"
-                className="w-full px-3.5 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3.5 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
           </div>
@@ -375,7 +375,7 @@ ON CONFLICT DO NOTHING;`;
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm disabled:opacity-50"
+              className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" />}
               Save to Database
@@ -385,7 +385,7 @@ ON CONFLICT DO NOTHING;`;
       </div>
 
       {/* Account List */}
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
         <div className="p-4 sm:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
           <div>
             <h2 className="text-base sm:text-lg font-semibold text-gray-900">Saved Debit Accounts</h2>
@@ -401,7 +401,7 @@ ON CONFLICT DO NOTHING;`;
               placeholder="Search accounts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-1.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-3.5 py-1.5 border rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
         </div>
@@ -465,7 +465,7 @@ ON CONFLICT DO NOTHING;`;
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(acc)}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit Account"
                         >
                           <Pencil className="w-4 h-4" />
@@ -473,7 +473,7 @@ ON CONFLICT DO NOTHING;`;
                         <button
                           type="button"
                           onClick={() => setDeletingAccount(acc)}
-                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete Account"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -510,7 +510,7 @@ ON CONFLICT DO NOTHING;`;
                     )}
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-2.5 font-mono text-xs font-semibold text-gray-800">
+                  <div className="bg-gray-50 rounded-xl p-2.5 font-mono text-xs font-semibold text-gray-800">
                     {acc.account_number}
                   </div>
 
@@ -518,7 +518,7 @@ ON CONFLICT DO NOTHING;`;
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(acc)}
-                      className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600 px-2.5 py-1 border rounded-md"
+                      className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600 px-2.5 py-1 border rounded-lg"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                       Edit
@@ -526,7 +526,7 @@ ON CONFLICT DO NOTHING;`;
                     <button
                       type="button"
                       onClick={() => setDeletingAccount(acc)}
-                      className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 px-2.5 py-1 border border-red-200 rounded-md hover:bg-red-50"
+                      className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 px-2.5 py-1 border border-red-200 rounded-lg hover:bg-red-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Delete
@@ -548,7 +548,7 @@ ON CONFLICT DO NOTHING;`;
               <button
                 type="button"
                 onClick={() => setEditingAccount(null)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-xl"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -564,7 +564,7 @@ ON CONFLICT DO NOTHING;`;
                   required
                   value={editFormData.account_number}
                   onChange={(e) => setEditFormData({ ...editFormData, account_number: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg font-mono text-sm"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 font-mono text-sm"
                 />
               </div>
 
@@ -577,7 +577,7 @@ ON CONFLICT DO NOTHING;`;
                   required
                   value={editFormData.account_label}
                   onChange={(e) => setEditFormData({ ...editFormData, account_label: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
                 />
               </div>
 
@@ -589,7 +589,7 @@ ON CONFLICT DO NOTHING;`;
                   type="text"
                   value={editFormData.bank_name}
                   onChange={(e) => setEditFormData({ ...editFormData, bank_name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
                 />
               </div>
 
@@ -607,14 +607,14 @@ ON CONFLICT DO NOTHING;`;
                 <button
                   type="button"
                   onClick={() => setEditingAccount(null)}
-                  className="px-4 py-2 border rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="px-4 py-2 border rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm"
                 >
                   {editSaving ? "Saving..." : "Save Changes"}
                 </button>
@@ -640,7 +640,7 @@ ON CONFLICT DO NOTHING;`;
               <button
                 type="button"
                 onClick={() => setDeletingAccount(null)}
-                className="flex-1 py-2 border rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="flex-1 py-2 border rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
                 Cancel
               </button>
@@ -648,7 +648,7 @@ ON CONFLICT DO NOTHING;`;
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold shadow-sm"
               >
                 {isDeleting ? "Deleting..." : "Delete"}
               </button>
@@ -669,7 +669,7 @@ ON CONFLICT DO NOTHING;`;
               <button
                 type="button"
                 onClick={() => setShowSqlModal(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-xl"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -684,7 +684,7 @@ ON CONFLICT DO NOTHING;`;
               <button
                 type="button"
                 onClick={copySql}
-                className="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors"
+                className="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
               >
                 {copiedSql ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedSql ? "Copied!" : "Copy SQL"}</span>
@@ -698,7 +698,7 @@ ON CONFLICT DO NOTHING;`;
                   setShowSqlModal(false);
                   fetchAccounts();
                 }}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold"
               >
                 Done / Refresh Table
               </button>

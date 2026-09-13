@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
+import Script from "next/script"
 import { supabase } from "@/lib/supabase"
 import { useForm } from "react-hook-form"
 import type { Client, PaymentAccount, Invoice, InvoiceFormData } from "@/types"
@@ -13,6 +14,10 @@ import {
   PlusCircle,
   FileText,
   ExternalLink,
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import SearchableClientSelect from "@/components/SearchableClientSelect"
@@ -25,6 +30,179 @@ export default function CreateInvoicePage() {
   const [submitting, setSubmitting] = useState(false)
   const [selectedClientId, setSelectedClientId] = useState("")
   const { register, handleSubmit, reset, setValue } = useForm<InvoiceFormData>()
+  const [alertData, setAlertData] = useState<{title: string, message: string, type: 'success' | 'error'} | null>(null)
+  
+  const showAlert = (message: string, type: 'success' | 'error' = 'error', title?: string) => {
+    setAlertData({ message, type, title: title || (type === 'success' ? 'Success' : 'Error') })
+  }
+
+  // PDF Upload state
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingPdf(true)
+    try {
+      const pdfjsLib = (window as any).pdfjsLib
+      if (!pdfjsLib) throw new Error("PDF library not loaded yet")
+      
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
+      }
+
+      const arrayBuffer = await file.arrayBuffer()
+      const data = new Uint8Array(arrayBuffer)
+      
+      const loadingTask = pdfjsLib.getDocument({
+        data,
+        password: "T137101",
+      })
+
+      const pdfDocument = await loadingTask.promise
+      const numPages = pdfDocument.numPages
+      let extractedRows: string[][] = []
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdfDocument.getPage(i)
+        const textContent = await page.getTextContent()
+        
+        const rowMap = new Map<number, any[]>()
+        const tolerance = 5
+
+        textContent.items.forEach((item: any) => {
+          if (!item.str || item.str.trim() === "") return
+          
+          const y = Math.round(item.transform[5])
+          const x = Math.round(item.transform[4])
+          
+          let foundY = y
+          for (const key of rowMap.keys()) {
+            if (Math.abs(key - y) <= tolerance) {
+              foundY = key
+              break
+            }
+          }
+          
+          if (!rowMap.has(foundY)) {
+            rowMap.set(foundY, [])
+          }
+          rowMap.get(foundY)!.push({ str: item.str, x })
+        })
+
+        const sortedY = Array.from(rowMap.keys()).sort((a, b) => b - a)
+        for (const y of sortedY) {
+          const rowItems = rowMap.get(y)!
+          rowItems.sort((a, b) => a.x - b.x)
+          extractedRows.push(rowItems.map((item: any) => item.str.trim()))
+        }
+      }
+      
+      if (extractedRows && extractedRows.length > 0) {
+        let curr = "", amount = "", valueDateStr = "", invoiceNumber = "", clientText = ""
+        
+        // Find the header row to accurately target columns
+        let headerRowIdx = -1
+        for (let i = 0; i < extractedRows.length; i++) {
+          const rowStr = extractedRows[i].join(" ").toLowerCase()
+          if (rowStr.includes("swift ref") && rowStr.includes("amount") && rowStr.includes("value date")) {
+            headerRowIdx = i
+            break
+          }
+        }
+
+        if (headerRowIdx !== -1 && headerRowIdx + 1 < extractedRows.length) {
+          const dataRow = extractedRows[headerRowIdx + 1]
+          // The columns based on standard MT103 structure:
+          // [0] Swift Ref, [1] Curr, [2] Amount, [3] Value Date, [4] Received From, [5] Ordering Customer, [6] Details
+          if (dataRow.length >= 7) {
+            curr = dataRow[1].toUpperCase()
+            amount = dataRow[2].replace(/,/g, "")
+            valueDateStr = dataRow[3]
+            invoiceNumber = dataRow[6]
+          }
+          
+          // Gather client text from the data row and subsequent rows (up to 5 rows)
+          const subsequentRows = extractedRows.slice(headerRowIdx + 1, headerRowIdx + 6)
+          clientText = subsequentRows.map(r => r.join(" ")).join(" ")
+        } else {
+          // Fallback heuristic if table isn't aligned perfectly
+          const textBlob = extractedRows.map((r: any) => r.join(" ")).join(" ")
+          clientText = textBlob
+          
+          const amtMatch = textBlob.match(/((?:USD|EUR|GBP|BDT|CAD|AUD|CHF))\s*([\d,]+\.\d{2})/i)
+          if (amtMatch) {
+             curr = amtMatch[1].toUpperCase()
+             amount = amtMatch[2].replace(/,/g, "")
+          }
+          const dateMatch = textBlob.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b/)
+          if (dateMatch) valueDateStr = dateMatch[1]
+        }
+
+        if (amount) {
+          setValue("amount", amount as any)
+          setValue("received_amount", amount as any)
+        }
+        if (curr) setValue("currency", curr)
+        
+        if (valueDateStr) {
+          let dateToParse = valueDateStr.replace(/\-/g, "/")
+          let parsedDate = new Date(dateToParse)
+          
+          // Handle DD/MM/YYYY or D/M/YYYY if naturally invalid
+          if (isNaN(parsedDate.getTime()) && valueDateStr.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/)) {
+             const parts = valueDateStr.split(/[\/\-]/)
+             parsedDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`)
+          }
+
+          if (!isNaN(parsedDate.getTime())) {
+            parsedDate.setDate(parsedDate.getDate() - 7)
+            setValue("invoice_date", parsedDate.toISOString().split("T")[0])
+          }
+        }
+
+        let matchedClient = null
+        const cText = clientText.toLowerCase()
+        
+        for (const c of clients) {
+          const dbName = c.name.toLowerCase()
+          if (cText.includes(dbName)) {
+            matchedClient = c
+            break
+          }
+          
+          // Fallback to matching the first significant word (e.g. "Paddle.com" instead of "Paddle.com Market Ltd")
+          const words = dbName.split(/[\s\,]+/).filter(w => w.length > 3)
+          if (words.length > 0 && cText.includes(words[0])) {
+            matchedClient = c
+            break
+          }
+        }
+        if (matchedClient) {
+          setSelectedClientId(matchedClient.id)
+          setValue("client_id", matchedClient.id)
+        }
+
+        if (invoiceNumber) {
+           setValue("invoice_number", invoiceNumber)
+        } else {
+           const invMatch = clientText.match(/INV[A-Z0-9\-\_]+/i)
+           if (invMatch) setValue("invoice_number", invMatch[0])
+        }
+
+        showAlert("PDF parsed successfully. Please review the autofilled fields.", "success")
+      } else {
+        showAlert("Could not extract data from the PDF.", "error")
+      }
+    } catch (err: any) {
+      showAlert(err.message || "Error parsing PDF", "error")
+    } finally {
+      setIsUploadingPdf(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
 
   // Invoices list state
   const [searchTerm, setSearchTerm] = useState("")
@@ -88,36 +266,35 @@ export default function CreateInvoicePage() {
   const onSubmit = async (data: InvoiceFormData) => {
     const clientId = selectedClientId || data.client_id
     if (!clientId) {
-      alert("Please select a client.")
+      showAlert("Please select a client.", "error")
       return
     }
 
     const cleanInvoiceNumber = data.invoice_number?.trim()
     if (!cleanInvoiceNumber) {
-      alert("Invoice number is required.")
+      showAlert("Invoice number is required.", "error")
       return
     }
 
     const cleanDescription = data.description?.trim()
     if (!cleanDescription) {
-      alert("Please enter a service description.")
+      showAlert("Please enter a service description.", "error")
       return
     }
 
     const parsedAmount = typeof data.amount === "string" ? parseFloat(data.amount) : Number(data.amount)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert("Please enter a valid invoice amount greater than 0.")
+      showAlert("Please enter a valid invoice amount greater than 0.", "error")
       return
     }
 
-    let parsedReceived = 0
+    let parsedReceived = parsedAmount
     if (data.received_amount !== undefined && data.received_amount !== "") {
-      parsedReceived =
-        typeof data.received_amount === "string"
-          ? parseFloat(data.received_amount)
-          : Number(data.received_amount)
-      if (isNaN(parsedReceived) || parsedReceived < 0) {
-        alert("Received amount cannot be negative.")
+      const customReceived = typeof data.received_amount === "string" ? parseFloat(data.received_amount) : Number(data.received_amount)
+      if (!isNaN(customReceived) && customReceived > 0) {
+        parsedReceived = customReceived
+      } else if (customReceived < 0) {
+        showAlert("Received amount cannot be negative.", "error")
         return
       }
     }
@@ -161,7 +338,7 @@ export default function CreateInvoicePage() {
     setSubmitting(false)
 
     if (!error) {
-      alert("Invoice created successfully!")
+      showAlert("Invoice created successfully!", "success")
       reset()
       setSelectedClientId("")
       const dateStr = new Date().toISOString().split("T")[0]
@@ -177,7 +354,7 @@ export default function CreateInvoicePage() {
       await fetchInvoices()
     } else {
       console.error("Error creating invoice:", error.message)
-      alert("Unable to save invoice. Please verify invoice details and try again.")
+      showAlert("Unable to save invoice. Please verify invoice details and try again.", "error")
     }
   }
 
@@ -201,7 +378,7 @@ export default function CreateInvoicePage() {
     const { error } = await supabase.from("invoices").delete().eq("id", inv.id)
     if (error) {
       console.error("Error deleting invoice:", error.message)
-      alert("Unable to delete invoice. Please try again.")
+      showAlert("Unable to delete invoice. Please try again.", "error")
       return
     }
 
@@ -235,6 +412,7 @@ export default function CreateInvoicePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 pb-16">
+      <Script src="//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" strategy="lazyOnload" />
       {/* Top Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Create Invoice</h1>
@@ -245,9 +423,29 @@ export default function CreateInvoicePage() {
 
       {/* TOP: Invoice Creation Form */}
       <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-xs border border-gray-200">
-        <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-          <PlusCircle className="w-5 h-5 text-blue-600" />
-          <h2 className="text-base sm:text-lg font-bold text-gray-900">New Invoice Details</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-blue-600" />
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">New Invoice Details</h2>
+          </div>
+          <div>
+             <input 
+               type="file" 
+               accept="application/pdf" 
+               className="hidden" 
+               ref={fileInputRef}
+               onChange={handleFileUpload}
+             />
+             <button
+               type="button"
+               onClick={() => fileInputRef.current?.click()}
+               disabled={isUploadingPdf}
+               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors cursor-pointer"
+             >
+               {isUploadingPdf ? <Loader2 className="w-4 h-4 animate-spin text-gray-500" /> : <UploadCloud className="w-4 h-4 text-gray-500" />}
+               {isUploadingPdf ? "Parsing..." : "Autofill from PDF"}
+             </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -270,7 +468,7 @@ export default function CreateInvoicePage() {
               <input
                 {...register("invoice_number", { required: true })}
                 maxLength={60}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
 
@@ -279,7 +477,7 @@ export default function CreateInvoicePage() {
               <input
                 type="date"
                 {...register("invoice_date", { required: true })}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
               />
             </div>
 
@@ -288,7 +486,7 @@ export default function CreateInvoicePage() {
               <select
                 {...register("currency")}
                 defaultValue="USD"
-                className="block w-full p-2.5 border rounded-lg border-gray-300 bg-white text-base sm:text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 bg-white text-base sm:text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
               >
                 <option value="USD">USD ($ - US Dollar)</option>
                 <option value="BDT">BDT (৳ - Bangladeshi Taka)</option>
@@ -308,7 +506,7 @@ export default function CreateInvoicePage() {
                 min="0.01"
                 max="999999999"
                 {...register("amount", { required: true })}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="0.00"
               />
             </div>
@@ -323,7 +521,7 @@ export default function CreateInvoicePage() {
                 min="0"
                 max="999999999"
                 {...register("received_amount")}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="Optional received amount"
               />
             </div>
@@ -335,7 +533,7 @@ export default function CreateInvoicePage() {
               <input
                 {...register("description", { required: true })}
                 maxLength={300}
-                className="block w-full p-2.5 border rounded-lg border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
+                className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
                 placeholder="e.g. Website Maintenance Service"
               />
             </div>
@@ -443,7 +641,7 @@ export default function CreateInvoicePage() {
                   setSearchTerm(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full pl-9 pr-3 py-2 sm:py-1.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white focus:outline-hidden"
+                className="w-full pl-9 pr-3 py-2 sm:py-1.5 text-base sm:text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white focus:outline-hidden"
               />
             </div>
 
@@ -454,7 +652,7 @@ export default function CreateInvoicePage() {
                 setTableClientFilter(e.target.value)
                 setCurrentPage(1)
               }}
-              className="py-2 sm:py-1.5 px-3 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white focus:outline-hidden"
+              className="py-2 sm:py-1.5 px-3 text-base sm:text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white focus:outline-hidden"
             >
               <option value="">All Clients</option>
               {clients.map((c) => (
@@ -514,7 +712,7 @@ export default function CreateInvoicePage() {
                         <Link
                           href={`/invoice-tools?invoiceId=${inv.id}`}
                           title="Generate Documents"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </Link>
@@ -524,7 +722,7 @@ export default function CreateInvoicePage() {
                           type="button"
                           onClick={() => handleEditInvoice(inv)}
                           title="Edit Invoice"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -534,7 +732,7 @@ export default function CreateInvoicePage() {
                           type="button"
                           onClick={() => handleDeleteInvoice(inv)}
                           title="Delete Invoice"
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -569,7 +767,7 @@ export default function CreateInvoicePage() {
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -580,7 +778,7 @@ export default function CreateInvoicePage() {
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -598,6 +796,28 @@ export default function CreateInvoicePage() {
         clients={clients}
         accounts={accounts}
       />
+
+      {alertData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className={`p-3 rounded-full ${alertData.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {alertData.type === 'success' ? <CheckCircle2 className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{alertData.title}</h3>
+                <p className="text-gray-500 text-sm">{alertData.message}</p>
+              </div>
+              <button
+                onClick={() => setAlertData(null)}
+                className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white font-medium py-2.5 rounded-lg transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

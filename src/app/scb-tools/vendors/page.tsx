@@ -177,7 +177,7 @@ export default function VendorsPage() {
   });
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto space-y-6 sm:space-y-8">
+    <div className="max-w-[1600px] mx-auto space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Vendor Management</h1>
         <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">Add, edit, and manage beneficiary bank accounts.</p>
@@ -192,7 +192,7 @@ export default function VendorsPage() {
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-emerald-600 hover:text-emerald-800 p-1 rounded-md"
+            className="text-emerald-600 hover:text-emerald-800 p-1 rounded-lg"
           >
             <X className="w-4 h-4" />
           </button>
@@ -227,34 +227,34 @@ export default function VendorsPage() {
       )}
 
       {/* Add New Vendor Form */}
-      <div className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border-slate-200 shadow-xs border">
         <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Add New Vendor</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Receiver Name</label>
-            <input required type="text" name="receiver_name" value={formData.receiver_name} onChange={handleChange} className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="John Doe" />
+            <input required type="text" name="receiver_name" value={formData.receiver_name} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="John Doe" />
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Account Number</label>
-            <input required type="text" name="account_number" value={formData.account_number} onChange={handleChange} className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="1234567890" />
+            <input required type="text" name="account_number" value={formData.account_number} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="1234567890" />
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-            <input required type="text" name="bank_name" value={formData.bank_name} onChange={handleChange} className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="City Bank" />
+            <input required type="text" name="bank_name" value={formData.bank_name} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="City Bank" />
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Branch Name</label>
-            <input required type="text" name="branch_name" value={formData.branch_name} onChange={handleChange} className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Main Branch" />
+            <input required type="text" name="branch_name" value={formData.branch_name} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Main Branch" />
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Routing Number</label>
-            <input required type="text" name="routing_number" value={formData.routing_number} onChange={handleChange} className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="112233445" />
+            <input required type="text" name="routing_number" value={formData.routing_number} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="112233445" />
           </div>
           <div className="sm:col-span-2 lg:col-span-1 flex items-end">
             <button 
               type="submit" 
               disabled={saving}
-              className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center font-medium transition-colors text-sm"
+              className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center font-medium transition-colors text-sm"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
               Save Vendor
@@ -281,7 +281,7 @@ export default function VendorsPage() {
               placeholder="Search vendors..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 sm:py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-9 pr-8 py-2 sm:py-1.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
             {searchQuery && (
               <button
@@ -335,7 +335,7 @@ export default function VendorsPage() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleStartEdit(v)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-md transition-colors"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors"
                             title="Edit vendor"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ export default function VendorsPage() {
                           </button>
                           <button
                             onClick={() => setDeletingVendor(v)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-md transition-colors"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
                             title="Delete vendor"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -371,14 +371,14 @@ export default function VendorsPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleStartEdit(v)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-100 transition-colors"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-xl border border-blue-100 transition-colors"
                         title="Edit vendor"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeletingVendor(v)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-100 transition-colors"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-xl border border-red-100 transition-colors"
                         title="Delete vendor"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -386,7 +386,7 @@ export default function VendorsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                     <div>
                       <span className="text-gray-500 block">Account Number</span>
                       <span className="font-mono text-gray-800 font-medium break-all">{v.account_number}</span>
@@ -420,7 +420,7 @@ export default function VendorsPage() {
               </div>
               <button
                 onClick={() => setEditingVendor(null)}
-                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100"
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-gray-100"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -436,7 +436,7 @@ export default function VendorsPage() {
                     name="receiver_name"
                     value={editFormData.receiver_name}
                     onChange={handleEditChange}
-                    className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
@@ -448,7 +448,7 @@ export default function VendorsPage() {
                       name="account_number"
                       value={editFormData.account_number}
                       onChange={handleEditChange}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                   <div>
@@ -459,7 +459,7 @@ export default function VendorsPage() {
                       name="routing_number"
                       value={editFormData.routing_number}
                       onChange={handleEditChange}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                 </div>
@@ -472,7 +472,7 @@ export default function VendorsPage() {
                       name="bank_name"
                       value={editFormData.bank_name}
                       onChange={handleEditChange}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                   <div>
@@ -483,7 +483,7 @@ export default function VendorsPage() {
                       name="branch_name"
                       value={editFormData.branch_name}
                       onChange={handleEditChange}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
                 </div>
@@ -494,14 +494,14 @@ export default function VendorsPage() {
                   type="button"
                   disabled={editSaving}
                   onClick={() => setEditingVendor(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl border transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={editSaving}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
                 >
                   {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   Save Changes
@@ -536,7 +536,7 @@ export default function VendorsPage() {
                 type="button"
                 disabled={isDeleting}
                 onClick={() => setDeletingVendor(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl border transition-colors"
               >
                 Cancel
               </button>
@@ -544,7 +544,7 @@ export default function VendorsPage() {
                 type="button"
                 disabled={isDeleting}
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm disabled:opacity-50 flex items-center gap-2 transition-colors"
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 Delete Vendor

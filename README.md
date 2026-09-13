@@ -38,8 +38,8 @@ cp .env.example .env.local
 Fill in your Supabase credentials:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=0001914137101
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=your-scb-debit-account-number
 ```
 
 ### 2. Setup Database (Single SQL Script)

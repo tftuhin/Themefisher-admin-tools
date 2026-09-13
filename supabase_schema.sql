@@ -127,7 +127,7 @@ CREATE POLICY "Allow anonymous delete access on debit_accounts" ON debit_account
 
 -- Seed default SCB debit account if not already present
 INSERT INTO debit_accounts (account_number, account_label, bank_name, is_default)
-VALUES ('0001914137101', 'Main SCB Account', 'Standard Chartered Bank', true)
+VALUES ('0000000000000', 'Main SCB Account', 'Standard Chartered Bank', true)
 ON CONFLICT DO NOTHING;
 
 -- Index optimizations

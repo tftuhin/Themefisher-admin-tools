@@ -58,7 +58,7 @@ export const BankInvoice = React.forwardRef<HTMLDivElement, BankInvoiceProps>(
                 bank_address: "67 Gulshan Avenue, Gulshan, Dhaka\n1212, Bangladesh",
                 name_on_account: "Themefisher",
                 bic_swift: "SCBLBDDXXXX",
-                account_number: "01914137101",
+                account_number: process.env.NEXT_PUBLIC_SCB_DEBIT_ACCOUNT || "YOUR_ACCOUNT_NUMBER",
               },
             ]
 

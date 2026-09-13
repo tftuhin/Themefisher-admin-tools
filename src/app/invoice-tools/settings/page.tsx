@@ -256,7 +256,7 @@ export default function SettingsPage() {
                   className={`w-full px-3.5 py-2.5 border rounded-lg text-base sm:text-sm transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
                     errors.account_number ? "border-red-300 bg-red-50/30" : "border-gray-300 bg-white"
                   }`}
-                  placeholder="e.g. 0001914137101 or GB29 XXXXX"
+                  placeholder="e.g. 0001234567890 or GB29 XXXXX"
                 />
               </div>
               {errors.account_number && (

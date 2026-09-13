@@ -329,6 +329,15 @@ export default function CreateInvoicePage() {
       return;
     }
 
+    if (invoices.some((inv) => inv.invoice_number === cleanInvoiceNumber)) {
+      showAlert(
+        `An invoice with the number "${cleanInvoiceNumber}" already exists in the system! Please use a unique invoice number.`,
+        "error",
+        "Duplicate Invoice Number"
+      );
+      return;
+    }
+
     const cleanDescription = data.description?.trim();
     if (!cleanDescription) {
       showAlert("Please enter a service description.", "error");

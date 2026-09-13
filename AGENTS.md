@@ -18,7 +18,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - A **Development Log** that tracks every change ever made
 
 **After making ANY code change** (no matter how small), you MUST:
-1. Append a new entry to the `## Development Log` section in `CONTEXT.md`
+1. Prepend a new entry to the `## Development Log` section in `CONTEXT.md` (just below the `<!-- NEW LOG ENTRIES GO BELOW THIS LINE -->` marker)
 2. Use the format: `### YYYY-MM-DD HH:MM — [Summary]` followed by bullet points describing what changed
 3. Include: files modified, why, and any new constraints or decisions made
 4. Commit `CONTEXT.md` together with your code changes

@@ -154,13 +154,13 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 3. Run `npm run dev` to start the dev server.
 4. The Supabase database is shared — no local DB setup needed.
 5. **Read this entire `CONTEXT.md` before making any changes.**
-6. **After every change:** Append a log entry (see format below), then commit.
+6. **After every change:** Prepend a log entry (see format below), then commit.
 
 ---
 
 ## Development Log
 
-> **Format for new entries (append at the bottom, newest last):**
+> **Format for new entries (prepend at the top, newest first):**
 > ```
 > ### YYYY-MM-DD HH:MM — [Short Summary]
 > **Agent/Dev:** [Agent name or "Manual"]
@@ -172,50 +172,17 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 ---
 
-### 2026-09-10 09:00 — Initial Project Setup
-**Agent/Dev:** Gemini (Antigravity)
+<!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
+
+### 2026-09-13 11:47 — Added CONTEXT.md & Agent Rules
+**Agent/Dev:** Claude (Opus 4.6)
 **Files changed:**
-- `src/app/page.tsx` — Dashboard home with tool selector cards
-- `src/app/layout.tsx` — Root layout with metadata
-- `src/app/invoice-tools/*` — Invoice creation, client management, settings
-- `src/app/scb-tools/*` — SCB transaction generator, vendor management, debit accounts
-- `src/components/*` — All shared components (sidebars, modals, forms, templates)
-- `src/lib/supabase.ts` — Supabase client initialization
-- `src/types/index.ts` — All TypeScript interfaces
-- `supabase_schema.sql` — Complete database schema
+- `CONTEXT.md` — **[NEW]** Comprehensive project context and development log
+- `AGENTS.md` — Added mandatory rules for reading `CONTEXT.md` and updating the development log
 **Decisions & notes:**
-- Unified two separate tools (Invoice/Form-C + SCB) into a single Next.js app
-- Supabase chosen for database (shared across all environments)
-- Tables created: `clients`, `invoices`, `payment_accounts`, `vendors`, `debit_accounts`
-- OpenGraph image and metadata configured
-
----
-
-### 2026-09-10 14:00 — PDF Auto-Fill & Security Hardening
-**Agent/Dev:** Gemini (Antigravity)
-**Files changed:**
-- `src/app/invoice-tools/create-invoice/page.tsx` — Added PDF upload/parsing to auto-fill invoice fields from bank remittance PDFs
-- `src/components/BankInvoice.tsx` — Invoice print template
-- `src/components/CForm.tsx` — Form-C template for inward remittance
-- `next.config.ts` — Added Webpack alias for `canvas: false` and `serverExternalPackages: ["canvas"]`
-**Decisions & notes:**
-- PDF password is fixed: `T137101`
-- Invoice Date = Value Date (from PDF) minus 7 days
-- Remitted Amount: defaults to invoice amount if left empty; custom entry overrides
-- Scrubbed all hardcoded SCB debit account numbers — moved to `NEXT_PUBLIC_SCB_DEBIT_ACCOUNT` env var
-- Removed unused PDF parser API route (`src/app/api/`) for performance
-- Custom alert modal implemented (centered, matches app design)
-
----
-
-### 2026-09-13 10:30 — Duplicate Invoice Prevention & Description Default
-**Agent/Dev:** Gemini (Antigravity)
-**Files changed:**
-- `src/app/invoice-tools/create-invoice/page.tsx` — Added duplicate invoice number check (blocks submission if number exists in local state); set default description to "Web development services" (pre-filled via `useForm` defaultValues + `setValue` on mount)
-**Decisions & notes:**
-- Invoice numbers are UNIQUE in database — no two invoices can share the same number
-- Description is pre-filled but user-editable
-- PDF parsing also warns if parsed invoice number already exists
+- Every AI agent must read `CONTEXT.md` before coding and append a log entry after every change
+- Log format includes: timestamp, agent name, files changed, decisions & notes
+- This ensures continuity across devices, agents, and sessions
 
 ---
 
@@ -236,16 +203,47 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 ---
 
-### 2026-09-13 11:47 — Added CONTEXT.md & Agent Rules
-**Agent/Dev:** Claude (Opus 4.6)
+### 2026-09-13 10:30 — Duplicate Invoice Prevention & Description Default
+**Agent/Dev:** Gemini (Antigravity)
 **Files changed:**
-- `CONTEXT.md` — **[NEW]** Comprehensive project context and development log
-- `AGENTS.md` — Added mandatory rules for reading `CONTEXT.md` and updating the development log
+- `src/app/invoice-tools/create-invoice/page.tsx` — Added duplicate invoice number check (blocks submission if number exists in local state); set default description to "Web development services" (pre-filled via `useForm` defaultValues + `setValue` on mount)
 **Decisions & notes:**
-- Every AI agent must read `CONTEXT.md` before coding and append a log entry after every change
-- Log format includes: timestamp, agent name, files changed, decisions & notes
-- This ensures continuity across devices, agents, and sessions
+- Invoice numbers are UNIQUE in database — no two invoices can share the same number
+- Description is pre-filled but user-editable
+- PDF parsing also warns if parsed invoice number already exists
 
 ---
 
-<!-- NEW LOG ENTRIES GO ABOVE THIS LINE -->
+### 2026-09-10 14:00 — PDF Auto-Fill & Security Hardening
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/create-invoice/page.tsx` — Added PDF upload/parsing to auto-fill invoice fields from bank remittance PDFs
+- `src/components/BankInvoice.tsx` — Invoice print template
+- `src/components/CForm.tsx` — Form-C template for inward remittance
+- `next.config.ts` — Added Webpack alias for `canvas: false` and `serverExternalPackages: ["canvas"]`
+**Decisions & notes:**
+- PDF password is fixed: `T137101`
+- Invoice Date = Value Date (from PDF) minus 7 days
+- Remitted Amount: defaults to invoice amount if left empty; custom entry overrides
+- Scrubbed all hardcoded SCB debit account numbers — moved to `NEXT_PUBLIC_SCB_DEBIT_ACCOUNT` env var
+- Removed unused PDF parser API route (`src/app/api/`) for performance
+- Custom alert modal implemented (centered, matches app design)
+
+---
+
+### 2026-09-10 09:00 — Initial Project Setup
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/page.tsx` — Dashboard home with tool selector cards
+- `src/app/layout.tsx` — Root layout with metadata
+- `src/app/invoice-tools/*` — Invoice creation, client management, settings
+- `src/app/scb-tools/*` — SCB transaction generator, vendor management, debit accounts
+- `src/components/*` — All shared components (sidebars, modals, forms, templates)
+- `src/lib/supabase.ts` — Supabase client initialization
+- `src/types/index.ts` — All TypeScript interfaces
+- `supabase_schema.sql` — Complete database schema
+**Decisions & notes:**
+- Unified two separate tools (Invoice/Form-C + SCB) into a single Next.js app
+- Supabase chosen for database (shared across all environments)
+- Tables created: `clients`, `invoices`, `payment_accounts`, `vendors`, `debit_accounts`
+- OpenGraph image and metadata configured

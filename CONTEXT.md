@@ -1,6 +1,6 @@
 # PROJECT CONTEXT — Themefisher Admin Tools (Finance Tools Suite)
 
-> **Purpose of this file:** This is the single source of truth for all AI agents and developers working on this project. It tracks architecture, business rules, development history, and known constraints so that context is never lost across devices, sessions, or agents. **Update this file after every significant change.**
+> **🚨 MANDATORY FOR ALL AI AGENTS:** Read this entire file before writing any code. After making ANY change (even a single line), you MUST append a new entry to the **Development Log** at the bottom of this file. Commit this file together with your code changes. No exceptions.
 
 ---
 
@@ -137,41 +137,7 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 ---
 
-## 8. Development History (Changelog)
-
-### 2026-09-10 — Initial Setup & Core Features
-- Initial commit: Unified Invoice + Form-C tools and SCB Transaction Generator into a single Next.js app.
-- Configured Supabase database with `clients`, `invoices`, `payment_accounts`, `vendors`, `debit_accounts` tables.
-- Built dashboard home page with tool selector cards.
-- Added comprehensive README.
-- Configured OpenGraph metadata and image.
-- Renamed sidebar items and fixed layout shift bug.
-
-### 2026-09-10 — PDF Auto-Fill & Invoice Enhancements
-- Added PDF upload and parsing for auto-filling invoice fields from bank remittance PDFs.
-- Implemented custom alert modal (centered, matching app design).
-- Scrubbed hardcoded SCB debit account numbers from codebase (moved to env vars).
-- Code sanitization: removed unused PDF parser API route, formatted codebase.
-
-### 2026-09-13 — Duplicate Prevention & Defaults
-- Added duplicate invoice number prevention (blocks form submission).
-- Added warning when PDF-parsed invoice number already exists.
-- Set default description to "Web development services" (pre-filled, user-editable).
-
-### 2026-09-13 — Bank Branch Routing Number Integration
-- Uploaded complete Bangladesh bank branch dataset (10,976 records) to Supabase `bank_branches` table.
-- Created `BankBranchSelect` component with `react-select/creatable`:
-  - Searchable bank name dropdown (fetches all unique banks with pagination).
-  - Dynamic branch dropdown (filters by selected bank, shows district).
-  - Auto-fills routing number on branch selection.
-  - Supports custom bank/branch entry for unlisted banks.
-- Integrated into vendor Add and Edit forms.
-- Cleaned up: removed temp scripts, unused SVGs, and data files.
-- Fixed `package.json` module format conflict (removed `"type": "commonjs"`).
-
----
-
-## 9. Deployment
+## 8. Deployment
 
 - **Platform:** Vercel
 - **Auto-deploy:** Push to `main` branch triggers deployment.
@@ -181,14 +147,105 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 ---
 
-## 10. How to Continue Development
+## 9. How to Continue Development
 
 1. Clone the repo and run `npm install`.
 2. Copy `.env.example` to `.env.local` and fill in Supabase credentials + SCB debit account.
 3. Run `npm run dev` to start the dev server.
 4. The Supabase database is shared — no local DB setup needed.
-5. **After making changes:** Update this `CONTEXT.md` file with what you changed, then commit and push.
+5. **Read this entire `CONTEXT.md` before making any changes.**
+6. **After every change:** Append a log entry (see format below), then commit.
 
 ---
 
-*Last updated: 2026-09-13*
+## Development Log
+
+> **Format for new entries (append at the bottom, newest last):**
+> ```
+> ### YYYY-MM-DD HH:MM — [Short Summary]
+> **Agent/Dev:** [Agent name or "Manual"]
+> **Files changed:**
+> - `path/to/file.tsx` — what changed and why
+> **Decisions & notes:**
+> - Any new constraints, business rules, or architectural decisions
+> ```
+
+---
+
+### 2026-09-10 09:00 — Initial Project Setup
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/page.tsx` — Dashboard home with tool selector cards
+- `src/app/layout.tsx` — Root layout with metadata
+- `src/app/invoice-tools/*` — Invoice creation, client management, settings
+- `src/app/scb-tools/*` — SCB transaction generator, vendor management, debit accounts
+- `src/components/*` — All shared components (sidebars, modals, forms, templates)
+- `src/lib/supabase.ts` — Supabase client initialization
+- `src/types/index.ts` — All TypeScript interfaces
+- `supabase_schema.sql` — Complete database schema
+**Decisions & notes:**
+- Unified two separate tools (Invoice/Form-C + SCB) into a single Next.js app
+- Supabase chosen for database (shared across all environments)
+- Tables created: `clients`, `invoices`, `payment_accounts`, `vendors`, `debit_accounts`
+- OpenGraph image and metadata configured
+
+---
+
+### 2026-09-10 14:00 — PDF Auto-Fill & Security Hardening
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/create-invoice/page.tsx` — Added PDF upload/parsing to auto-fill invoice fields from bank remittance PDFs
+- `src/components/BankInvoice.tsx` — Invoice print template
+- `src/components/CForm.tsx` — Form-C template for inward remittance
+- `next.config.ts` — Added Webpack alias for `canvas: false` and `serverExternalPackages: ["canvas"]`
+**Decisions & notes:**
+- PDF password is fixed: `T137101`
+- Invoice Date = Value Date (from PDF) minus 7 days
+- Remitted Amount: defaults to invoice amount if left empty; custom entry overrides
+- Scrubbed all hardcoded SCB debit account numbers — moved to `NEXT_PUBLIC_SCB_DEBIT_ACCOUNT` env var
+- Removed unused PDF parser API route (`src/app/api/`) for performance
+- Custom alert modal implemented (centered, matches app design)
+
+---
+
+### 2026-09-13 10:30 — Duplicate Invoice Prevention & Description Default
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/create-invoice/page.tsx` — Added duplicate invoice number check (blocks submission if number exists in local state); set default description to "Web development services" (pre-filled via `useForm` defaultValues + `setValue` on mount)
+**Decisions & notes:**
+- Invoice numbers are UNIQUE in database — no two invoices can share the same number
+- Description is pre-filled but user-editable
+- PDF parsing also warns if parsed invoice number already exists
+
+---
+
+### 2026-09-13 11:25 — Bank Branch Routing Number Integration
+**Agent/Dev:** Gemini (Antigravity) + Claude (Opus 4.6)
+**Files changed:**
+- `src/components/BankBranchSelect.tsx` — **[NEW]** Searchable bank/branch dropdown with routing auto-fill using `react-select/creatable`
+- `src/app/scb-tools/vendors/page.tsx` — Replaced plain text inputs with `BankBranchSelect` in both Add and Edit forms
+- `supabase_schema.sql` — Added `bank_branches` table schema
+- `package.json` — Added `react-select` dependency; removed accidental `"type": "commonjs"`
+**Decisions & notes:**
+- Uploaded 10,976 Bangladesh bank branch records to Supabase `bank_branches` table
+- RLS: public read + insert policies on `bank_branches`
+- Supabase returns max 1000 rows per query — `BankBranchSelect` paginates to fetch all unique bank names
+- `BankBranchSelect` loaded via `next/dynamic` with `ssr: false` (avoids hydration mismatch)
+- Users can enter custom bank/branch names not in the official list (CreatableSelect)
+- Cleaned up: removed temp migration scripts, unused Next.js boilerplate SVGs, `src/data/` directory
+
+---
+
+### 2026-09-13 11:47 — Added CONTEXT.md & Agent Rules
+**Agent/Dev:** Claude (Opus 4.6)
+**Files changed:**
+- `CONTEXT.md` — **[NEW]** Comprehensive project context and development log
+- `AGENTS.md` — Added mandatory rules for reading `CONTEXT.md` and updating the development log
+**Decisions & notes:**
+- Every AI agent must read `CONTEXT.md` before coding and append a log entry after every change
+- Log format includes: timestamp, agent name, files changed, decisions & notes
+- This ensures continuity across devices, agents, and sessions
+
+---
+
+<!-- NEW LOG ENTRIES GO ABOVE THIS LINE -->

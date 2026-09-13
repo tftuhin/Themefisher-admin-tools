@@ -31,8 +31,11 @@ export default function CreateInvoicePage() {
   >([]);
   const [submitting, setSubmitting] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
-  const { register, handleSubmit, reset, setValue } =
-    useForm<InvoiceFormData>();
+  const { register, handleSubmit, reset, setValue } = useForm<InvoiceFormData>({
+    defaultValues: {
+      description: "Web development services",
+    },
+  });
   const [alertData, setAlertData] = useState<{
     title: string;
     message: string;
@@ -631,7 +634,7 @@ export default function CreateInvoicePage() {
                 {...register("description", { required: true })}
                 maxLength={300}
                 className="block w-full p-2.5 border rounded-xl border-gray-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-hidden"
-                placeholder="e.g. Website Maintenance Service"
+                placeholder="Web development services"
               />
             </div>
 

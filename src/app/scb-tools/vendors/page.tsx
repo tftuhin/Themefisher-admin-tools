@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured, type Vendor } from "@/lib/supabase";
+import dynamic from "next/dynamic";
+
+const BankBranchSelect = dynamic(() => import("@/components/BankBranchSelect"), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-100 rounded-xl h-[38px]" />,
+});
 import {
   Plus,
   Loader2,
@@ -308,48 +314,14 @@ export default function VendorsPage() {
               placeholder="1234567890"
             />
           </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-              Bank Name
-            </label>
-            <input
-              required
-              type="text"
-              name="bank_name"
-              value={formData.bank_name}
-              onChange={handleChange}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="City Bank"
-            />
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-              Branch Name
-            </label>
-            <input
-              required
-              type="text"
-              name="branch_name"
-              value={formData.branch_name}
-              onChange={handleChange}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="Main Branch"
-            />
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-              Routing Number
-            </label>
-            <input
-              required
-              type="text"
-              name="routing_number"
-              value={formData.routing_number}
-              onChange={handleChange}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="112233445"
-            />
-          </div>
+          <BankBranchSelect
+            bankName={formData.bank_name}
+            branchName={formData.branch_name}
+            routingNumber={formData.routing_number}
+            onBankChange={(val) => setFormData((prev) => ({ ...prev, bank_name: val }))}
+            onBranchChange={(val) => setFormData((prev) => ({ ...prev, branch_name: val }))}
+            onRoutingChange={(val) => setFormData((prev) => ({ ...prev, routing_number: val }))}
+          />
           <div className="sm:col-span-2 lg:col-span-1 flex items-end">
             <button
               type="submit"
@@ -592,47 +564,14 @@ export default function VendorsPage() {
                       className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      Routing Number
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="routing_number"
-                      value={editFormData.routing_number}
-                      onChange={handleEditChange}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      Bank Name
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="bank_name"
-                      value={editFormData.bank_name}
-                      onChange={handleEditChange}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                      Branch Name
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      name="branch_name"
-                      value={editFormData.branch_name}
-                      onChange={handleEditChange}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    />
-                  </div>
+                  <BankBranchSelect
+                    bankName={editFormData.bank_name}
+                    branchName={editFormData.branch_name}
+                    routingNumber={editFormData.routing_number}
+                    onBankChange={(val) => setEditFormData((prev) => ({ ...prev, bank_name: val }))}
+                    onBranchChange={(val) => setEditFormData((prev) => ({ ...prev, branch_name: val }))}
+                    onRoutingChange={(val) => setEditFormData((prev) => ({ ...prev, routing_number: val }))}
+                  />
                 </div>
               </div>
 

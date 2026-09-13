@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -16,6 +16,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.87.0",
+    "react-select": "^5.10.2",
     "react-to-print": "^3.3.0",
     "xlsx": "^0.18.5"
   },
@@ -28,5 +29,18 @@
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "A unified Next.js application that brings together international inward remittance billing, Bangladesh Bank Form-C generation, and Standard Chartered Bank (SCB) bulk transaction Excel export into a single repository, single deployment, and single database.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tftuhin/Themefisher-admin-tools.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tftuhin/Themefisher-admin-tools/issues"
+  },
+  "homepage": "https://github.com/tftuhin/Themefisher-admin-tools#readme"
 }

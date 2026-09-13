@@ -134,3 +134,23 @@ ON CONFLICT DO NOTHING;
 CREATE INDEX IF NOT EXISTS idx_invoices_client_id ON invoices(client_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_invoice_date ON invoices(invoice_date);
 CREATE INDEX IF NOT EXISTS idx_vendors_receiver_name ON vendors(receiver_name);
+CREATE TABLE IF NOT EXISTS public.bank_branches (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  bank_code text,
+  bank_name text NOT NULL,
+  district_code text,
+  district_name text,
+  branch_code text,
+  branch_name text NOT NULL,
+  routing_number text UNIQUE NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Set up row level security
+ALTER TABLE public.bank_branches ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access to bank_branches"
+ON public.bank_branches FOR SELECT
+USING (true);
+
+-- We don't need public insert/update/delete for branches since it's a static list

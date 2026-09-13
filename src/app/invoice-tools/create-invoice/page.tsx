@@ -219,17 +219,30 @@ export default function CreateInvoicePage() {
           setValue("client_id", matchedClient.id);
         }
 
+        let finalInvoiceNumber = "";
         if (invoiceNumber) {
+          finalInvoiceNumber = invoiceNumber;
           setValue("invoice_number", invoiceNumber);
         } else {
           const invMatch = clientText.match(/INV[A-Z0-9\-\_]+/i);
-          if (invMatch) setValue("invoice_number", invMatch[0]);
+          if (invMatch) {
+            finalInvoiceNumber = invMatch[0];
+            setValue("invoice_number", invMatch[0]);
+          }
         }
 
-        showAlert(
-          "PDF parsed successfully. Please review the autofilled fields.",
-          "success",
-        );
+        if (finalInvoiceNumber && invoices.some(inv => inv.invoice_number === finalInvoiceNumber)) {
+          showAlert(
+            `An invoice with the number "${finalInvoiceNumber}" already exists in the system! Please verify before submitting.`,
+            "error",
+            "Duplicate Invoice Number"
+          );
+        } else {
+          showAlert(
+            "PDF parsed successfully. Please review the autofilled fields.",
+            "success",
+          );
+        }
       } else {
         showAlert("Could not extract data from the PDF.", "error");
       }

@@ -15,7 +15,9 @@ export default function Dashboard() {
               <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
                 Themefisher Admin Tools
               </h1>
-              <p className="text-xs text-slate-500">Select a tool to get started</p>
+              <p className="text-xs text-slate-500">
+                Select a tool to get started
+              </p>
             </div>
           </div>
         </div>
@@ -48,7 +50,8 @@ export default function Dashboard() {
                 Invoice &amp; Form-C Generator
               </h3>
               <p className="text-slate-500 text-sm mt-3 leading-relaxed">
-                Generate Bangladesh Bank Form-C declarations and bank invoices with one-click print and PDF export.
+                Generate Bangladesh Bank Form-C declarations and bank invoices
+                with one-click print and PDF export.
               </p>
               <div className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 group-hover:translate-x-1 transition-transform">
                 <span>Open Tool</span>
@@ -68,7 +71,8 @@ export default function Dashboard() {
                 SCB Transection Generator
               </h3>
               <p className="text-slate-500 text-sm mt-3 leading-relaxed">
-                Generate bulk bank transfer Excel files compliant with Standard Chartered Bank format specifications.
+                Generate bulk bank transfer Excel files compliant with Standard
+                Chartered Bank format specifications.
               </p>
               <div className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 group-hover:translate-x-1 transition-transform">
                 <span>Open Tool</span>

@@ -1,44 +1,57 @@
-'use client'
-import { useState } from "react"
-import { supabase } from "@/lib/supabase"
-import type { Client, Invoice, PaymentAccount } from "@/types"
-import { X, Save } from "lucide-react"
-import SearchableClientSelect from "@/components/SearchableClientSelect"
+"use client";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import type { Client, Invoice, PaymentAccount } from "@/types";
+import { X, Save } from "lucide-react";
+import SearchableClientSelect from "@/components/SearchableClientSelect";
 
 interface EditInvoiceModalProps {
-  invoice: Invoice | null
-  isOpen: boolean
-  onClose: () => void
-  onSaved: (updated: Invoice) => void
-  clients: Client[]
-  accounts: PaymentAccount[]
+  invoice: Invoice | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSaved: (updated: Invoice) => void;
+  clients: Client[];
+  accounts: PaymentAccount[];
 }
 
 function formatDateForInput(dateStr?: string): string {
-  if (!dateStr) return ""
+  if (!dateStr) return "";
   // If already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   // Try standard parse
-  const d = new Date(dateStr)
+  const d = new Date(dateStr);
   if (!isNaN(d.getTime())) {
     try {
-      return d.toISOString().split("T")[0]
+      return d.toISOString().split("T")[0];
     } catch {}
   }
   // Try format like 2-Sep-26 or 21-Jan-24
-  const parts = dateStr.split(/[-/ ]/)
+  const parts = dateStr.split(/[-/ ]/);
   if (parts.length === 3) {
-    const day = parseInt(parts[0], 10)
-    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-    const month = months.indexOf(parts[1].toLowerCase())
-    let year = parseInt(parts[2], 10)
-    if (year < 100) year += 2000
+    const day = parseInt(parts[0], 10);
+    const months = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
+    const month = months.indexOf(parts[1].toLowerCase());
+    let year = parseInt(parts[2], 10);
+    if (year < 100) year += 2000;
     if (!isNaN(day) && month !== -1 && !isNaN(year)) {
-      const pad = (n: number) => String(n).padStart(2, "0")
-      return `${year}-${pad(month + 1)}-${pad(day)}`
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${year}-${pad(month + 1)}-${pad(day)}`;
     }
   }
-  return dateStr
+  return dateStr;
 }
 
 function EditInvoiceForm({
@@ -48,64 +61,76 @@ function EditInvoiceForm({
   clients,
   accounts,
 }: {
-  invoice: Invoice
-  onClose: () => void
-  onSaved: (updated: Invoice) => void
-  clients: Client[]
-  accounts: PaymentAccount[]
+  invoice: Invoice;
+  onClose: () => void;
+  onSaved: (updated: Invoice) => void;
+  clients: Client[];
+  accounts: PaymentAccount[];
 }) {
-  const [clientId, setClientId] = useState(invoice.client_id || "")
-  const [invoiceNumber, setInvoiceNumber] = useState(invoice.invoice_number || "")
-  const [invoiceDate, setInvoiceDate] = useState(formatDateForInput(invoice.invoice_date))
-  const [currency, setCurrency] = useState(invoice.currency || "USD")
-  const [amount, setAmount] = useState(invoice.amount !== undefined ? String(invoice.amount) : "")
+  const [clientId, setClientId] = useState(invoice.client_id || "");
+  const [invoiceNumber, setInvoiceNumber] = useState(
+    invoice.invoice_number || "",
+  );
+  const [invoiceDate, setInvoiceDate] = useState(
+    formatDateForInput(invoice.invoice_date),
+  );
+  const [currency, setCurrency] = useState(invoice.currency || "USD");
+  const [amount, setAmount] = useState(
+    invoice.amount !== undefined ? String(invoice.amount) : "",
+  );
   const [receivedAmount, setReceivedAmount] = useState(
-    invoice.received_amount !== undefined ? String(invoice.received_amount) : ""
-  )
-  const [description, setDescription] = useState(invoice.description || "")
-  const [paymentMethods, setPaymentMethods] = useState<string[]>(invoice.payment_methods || [])
-  const [saving, setSaving] = useState(false)
-  const [errorMsg, setErrorMsg] = useState("")
+    invoice.received_amount !== undefined
+      ? String(invoice.received_amount)
+      : "",
+  );
+  const [description, setDescription] = useState(invoice.description || "");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(
+    invoice.payment_methods || [],
+  );
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const toggleAccount = (accId: string) => {
     setPaymentMethods((prev) =>
-      prev.includes(accId) ? prev.filter((id) => id !== accId) : [...prev, accId]
-    )
-  }
+      prev.includes(accId)
+        ? prev.filter((id) => id !== accId)
+        : [...prev, accId],
+    );
+  };
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!clientId) {
-      setErrorMsg("Please select a client.")
-      return
+      setErrorMsg("Please select a client.");
+      return;
     }
 
-    const cleanInvoiceNumber = invoiceNumber.trim()
+    const cleanInvoiceNumber = invoiceNumber.trim();
     if (!cleanInvoiceNumber) {
-      setErrorMsg("Invoice number is required.")
-      return
+      setErrorMsg("Invoice number is required.");
+      return;
     }
 
-    const cleanDescription = description.trim()
+    const cleanDescription = description.trim();
     if (!cleanDescription) {
-      setErrorMsg("Description is required.")
-      return
+      setErrorMsg("Description is required.");
+      return;
     }
 
-    const parsedAmount = parseFloat(amount)
+    const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setErrorMsg("Please enter a valid invoice amount greater than 0.")
-      return
+      setErrorMsg("Please enter a valid invoice amount greater than 0.");
+      return;
     }
 
-    const parsedReceived = receivedAmount ? parseFloat(receivedAmount) : 0
+    const parsedReceived = receivedAmount ? parseFloat(receivedAmount) : 0;
     if (isNaN(parsedReceived) || parsedReceived < 0) {
-      setErrorMsg("Received amount cannot be negative.")
-      return
+      setErrorMsg("Received amount cannot be negative.");
+      return;
     }
 
-    setSaving(true)
-    setErrorMsg("")
+    setSaving(true);
+    setErrorMsg("");
 
     const updatePayload: Record<string, unknown> = {
       client_id: clientId,
@@ -116,45 +141,55 @@ function EditInvoiceForm({
       description: cleanDescription,
       received_amount: parsedReceived,
       payment_methods: paymentMethods,
-    }
+    };
 
     let { data, error } = await supabase
       .from("invoices")
       .update(updatePayload)
       .eq("id", invoice.id)
-      .select()
+      .select();
 
     // Fallback if currency column issue
-    if (error && (error.code === "42703" || error.message?.includes("currency"))) {
-      delete updatePayload.currency
+    if (
+      error &&
+      (error.code === "42703" || error.message?.includes("currency"))
+    ) {
+      delete updatePayload.currency;
       const fallback = await supabase
         .from("invoices")
         .update(updatePayload)
         .eq("id", invoice.id)
-        .select()
-      data = fallback.data
-      error = fallback.error
+        .select();
+      data = fallback.data;
+      error = fallback.error;
     }
 
-    setSaving(false)
+    setSaving(false);
 
     if (error) {
-      console.error("Failed to update invoice:", error.message)
-      setErrorMsg("Unable to update invoice. Please try again.")
+      console.error("Failed to update invoice:", error.message);
+      setErrorMsg("Unable to update invoice. Please try again.");
     } else {
-      const updatedItem = data && data[0] ? (data[0] as Invoice) : { ...invoice, ...updatePayload }
-      onSaved(updatedItem)
-      onClose()
+      const updatedItem =
+        data && data[0]
+          ? (data[0] as Invoice)
+          : { ...invoice, ...updatePayload };
+      onSaved(updatedItem);
+      onClose();
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-gray-200 overflow-hidden my-auto">
       {/* Header */}
       <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/70 shrink-0">
         <div className="min-w-0 pr-2">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900">Edit Invoice</h2>
-          <p className="text-xs text-gray-500 font-mono mt-0.5 truncate">{invoice.invoice_number}</p>
+          <h2 className="text-base sm:text-lg font-bold text-gray-900">
+            Edit Invoice
+          </h2>
+          <p className="text-xs text-gray-500 font-mono mt-0.5 truncate">
+            {invoice.invoice_number}
+          </p>
         </div>
         <button
           type="button"
@@ -166,7 +201,10 @@ function EditInvoiceForm({
       </div>
 
       {/* Form Body */}
-      <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 sm:space-y-5">
+      <form
+        onSubmit={handleSave}
+        className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 sm:space-y-5"
+      >
         {errorMsg && (
           <div className="p-3 bg-red-50 text-red-700 text-xs sm:text-sm rounded-lg border border-red-200">
             {errorMsg}
@@ -286,7 +324,7 @@ function EditInvoiceForm({
             </label>
             <div className="space-y-2.5">
               {accounts.map((a) => {
-                const isChecked = paymentMethods.includes(a.id)
+                const isChecked = paymentMethods.includes(a.id);
                 return (
                   <div
                     key={a.id}
@@ -317,12 +355,13 @@ function EditInvoiceForm({
                       </div>
                       {a.account_number && (
                         <div className="text-xs text-gray-600 mt-0.5 truncate">
-                          Account: <span className="font-mono">{a.account_number}</span>
+                          Account:{" "}
+                          <span className="font-mono">{a.account_number}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
@@ -348,7 +387,7 @@ function EditInvoiceForm({
         </div>
       </form>
     </div>
-  )
+  );
 }
 
 export function EditInvoiceModal({
@@ -359,7 +398,7 @@ export function EditInvoiceModal({
   clients,
   accounts,
 }: EditInvoiceModalProps) {
-  if (!isOpen || !invoice) return null
+  if (!isOpen || !invoice) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
@@ -372,5 +411,5 @@ export function EditInvoiceModal({
         accounts={accounts}
       />
     </div>
-  )
+  );
 }

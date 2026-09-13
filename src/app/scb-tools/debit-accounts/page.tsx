@@ -1,8 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase, isSupabaseConfigured, type DebitAccount } from "@/lib/supabase";
-import { Plus, Loader2, AlertCircle, Pencil, Trash2, X, Check, Search, AlertTriangle, CreditCard, Copy, Star } from "lucide-react";
+import {
+  supabase,
+  isSupabaseConfigured,
+  type DebitAccount,
+} from "@/lib/supabase";
+import {
+  Plus,
+  Loader2,
+  AlertCircle,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Search,
+  AlertTriangle,
+  CreditCard,
+  Copy,
+  Star,
+} from "lucide-react";
 
 export default function DebitAccountsPage() {
   const [accounts, setAccounts] = useState<DebitAccount[]>([]);
@@ -24,7 +41,9 @@ export default function DebitAccountsPage() {
   });
 
   // Edit State
-  const [editingAccount, setEditingAccount] = useState<DebitAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState<DebitAccount | null>(
+    null,
+  );
   const [editFormData, setEditFormData] = useState({
     account_number: "",
     account_label: "",
@@ -34,7 +53,9 @@ export default function DebitAccountsPage() {
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete State
-  const [deletingAccount, setDeletingAccount] = useState<DebitAccount | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<DebitAccount | null>(
+    null,
+  );
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchAccounts = async () => {
@@ -55,7 +76,10 @@ export default function DebitAccountsPage() {
 
       if (error) {
         console.error("Error fetching debit accounts:", error);
-        if (error.message?.includes("Could not find the table") || error.code === "42P01") {
+        if (
+          error.message?.includes("Could not find the table") ||
+          error.code === "42P01"
+        ) {
           setTableNotFound(true);
         } else {
           setErrorMessage(error.message);
@@ -65,7 +89,8 @@ export default function DebitAccountsPage() {
       }
     } catch (err: unknown) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : "Failed to load debit accounts";
+      const msg =
+        err instanceof Error ? err.message : "Failed to load debit accounts";
       setErrorMessage(msg);
     }
     setLoading(false);
@@ -94,22 +119,30 @@ export default function DebitAccountsPage() {
 
     // If new account is marked default, unset others first
     if (formData.is_default && accounts.length > 0) {
-      await supabase.from("debit_accounts").update({ is_default: false }).neq("id", "00000000-0000-0000-0000-000000000000");
+      await supabase
+        .from("debit_accounts")
+        .update({ is_default: false })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
     }
 
     const { data, error } = await supabase
       .from("debit_accounts")
-      .insert([{
-        account_number: formData.account_number.trim(),
-        account_label: formData.account_label.trim() || "Debit Account",
-        bank_name: formData.bank_name.trim() || "Standard Chartered Bank",
-        is_default: formData.is_default || accounts.length === 0,
-      }])
+      .insert([
+        {
+          account_number: formData.account_number.trim(),
+          account_label: formData.account_label.trim() || "Debit Account",
+          bank_name: formData.bank_name.trim() || "Standard Chartered Bank",
+          is_default: formData.is_default || accounts.length === 0,
+        },
+      ])
       .select();
 
     if (error) {
       console.error(error);
-      if (error.message?.includes("Could not find the table") || error.code === "42P01") {
+      if (
+        error.message?.includes("Could not find the table") ||
+        error.code === "42P01"
+      ) {
         setTableNotFound(true);
         setShowSqlModal(true);
       } else {
@@ -135,13 +168,21 @@ export default function DebitAccountsPage() {
   const handleSetDefault = async (acc: DebitAccount) => {
     try {
       // Unset all
-      await supabase.from("debit_accounts").update({ is_default: false }).neq("id", acc.id);
+      await supabase
+        .from("debit_accounts")
+        .update({ is_default: false })
+        .neq("id", acc.id);
       // Set chosen
-      const { error } = await supabase.from("debit_accounts").update({ is_default: true }).eq("id", acc.id);
+      const { error } = await supabase
+        .from("debit_accounts")
+        .update({ is_default: true })
+        .eq("id", acc.id);
       if (error) throw error;
 
       localStorage.setItem("scb_debit_account", acc.account_number);
-      triggerSuccess(`Set "${acc.account_label}" as the default debit account!`);
+      triggerSuccess(
+        `Set "${acc.account_label}" as the default debit account!`,
+      );
       fetchAccounts();
     } catch (err: unknown) {
       console.error(err);
@@ -168,7 +209,10 @@ export default function DebitAccountsPage() {
     setEditSaving(true);
 
     if (editFormData.is_default) {
-      await supabase.from("debit_accounts").update({ is_default: false }).neq("id", editingAccount.id);
+      await supabase
+        .from("debit_accounts")
+        .update({ is_default: false })
+        .neq("id", editingAccount.id);
     }
 
     const { error } = await supabase
@@ -185,7 +229,10 @@ export default function DebitAccountsPage() {
       alert(`Update failed: ${error.message}`);
     } else {
       if (editFormData.is_default) {
-        localStorage.setItem("scb_debit_account", editFormData.account_number.trim());
+        localStorage.setItem(
+          "scb_debit_account",
+          editFormData.account_number.trim(),
+        );
       }
       triggerSuccess("Debit account updated successfully!");
       setEditingAccount(null);
@@ -199,7 +246,10 @@ export default function DebitAccountsPage() {
     if (!deletingAccount) return;
     setIsDeleting(true);
 
-    const { error } = await supabase.from("debit_accounts").delete().eq("id", deletingAccount.id);
+    const { error } = await supabase
+      .from("debit_accounts")
+      .delete()
+      .eq("id", deletingAccount.id);
     if (error) {
       alert(`Delete failed: ${error.message}`);
     } else {
@@ -243,7 +293,7 @@ ON CONFLICT DO NOTHING;`;
     (a) =>
       a.account_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.account_label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.bank_name.toLowerCase().includes(searchQuery.toLowerCase())
+      a.bank_name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -253,9 +303,12 @@ ON CONFLICT DO NOTHING;`;
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
           Funding Configuration
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Debit Accounts</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Debit Accounts
+        </h1>
         <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">
-          Manage your funding bank debit accounts stored in Supabase. The default account is automatically loaded into the transfer generator.
+          Manage your funding bank debit accounts stored in Supabase. The
+          default account is automatically loaded into the transfer generator.
         </p>
       </div>
 
@@ -265,9 +318,15 @@ ON CONFLICT DO NOTHING;`;
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold text-sm sm:text-base">Database Table Required: debit_accounts</p>
+              <p className="font-semibold text-sm sm:text-base">
+                Database Table Required: debit_accounts
+              </p>
               <p className="text-xs sm:text-sm text-amber-800 mt-1">
-                Your Supabase project needs the <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">debit_accounts</code> table created to store accounts centrally.
+                Your Supabase project needs the{" "}
+                <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">
+                  debit_accounts
+                </code>{" "}
+                table created to store accounts centrally.
               </p>
             </div>
           </div>
@@ -288,7 +347,10 @@ ON CONFLICT DO NOTHING;`;
             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-red-600 hover:text-red-800 p-1">
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-red-600 hover:text-red-800 p-1"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -301,7 +363,10 @@ ON CONFLICT DO NOTHING;`;
             <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-green-600 hover:text-green-800 p-1">
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-green-600 hover:text-green-800 p-1"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -314,7 +379,8 @@ ON CONFLICT DO NOTHING;`;
           Add Debit Account
         </h2>
         <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
-          Add an account number to the database. It will be pulled automatically on all your devices.
+          Add an account number to the database. It will be pulled automatically
+          on all your devices.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -327,7 +393,9 @@ ON CONFLICT DO NOTHING;`;
                 type="text"
                 required
                 value={formData.account_number}
-                onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, account_number: e.target.value })
+                }
                 placeholder="e.g. 0001234567890"
                 className="w-full px-3.5 py-2 border rounded-xl font-mono text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
@@ -341,7 +409,9 @@ ON CONFLICT DO NOTHING;`;
                 type="text"
                 required
                 value={formData.account_label}
-                onChange={(e) => setFormData({ ...formData, account_label: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, account_label: e.target.value })
+                }
                 placeholder="e.g. Main SCB Account"
                 className="w-full px-3.5 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
@@ -354,7 +424,9 @@ ON CONFLICT DO NOTHING;`;
               <input
                 type="text"
                 value={formData.bank_name}
-                onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, bank_name: e.target.value })
+                }
                 placeholder="Standard Chartered Bank"
                 className="w-full px-3.5 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
@@ -366,7 +438,9 @@ ON CONFLICT DO NOTHING;`;
               <input
                 type="checkbox"
                 checked={formData.is_default}
-                onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, is_default: e.target.checked })
+                }
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
               />
               <span className="font-medium">Set as Default Debit Account</span>
@@ -377,7 +451,11 @@ ON CONFLICT DO NOTHING;`;
               disabled={saving}
               className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm disabled:opacity-50"
             >
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-1.5" />}
+              {saving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-1.5" />
+              )}
               Save to Database
             </button>
           </div>
@@ -388,9 +466,12 @@ ON CONFLICT DO NOTHING;`;
       <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
         <div className="p-4 sm:p-5 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
           <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Saved Debit Accounts</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+              Saved Debit Accounts
+            </h2>
             <p className="text-xs sm:text-sm text-gray-500">
-              {accounts.length} {accounts.length === 1 ? "account" : "accounts"} configured in database
+              {accounts.length} {accounts.length === 1 ? "account" : "accounts"}{" "}
+              configured in database
             </p>
           </div>
 
@@ -409,14 +490,20 @@ ON CONFLICT DO NOTHING;`;
         {loading ? (
           <div className="p-12 text-center text-gray-400 flex flex-col items-center justify-center gap-2">
             <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="text-sm">Loading debit accounts from database...</span>
+            <span className="text-sm">
+              Loading debit accounts from database...
+            </span>
           </div>
         ) : filteredAccounts.length === 0 ? (
           <div className="p-12 text-center text-gray-500 space-y-2">
             <CreditCard className="w-10 h-10 text-gray-300 mx-auto" />
-            <p className="font-semibold text-gray-700">No debit accounts found</p>
+            <p className="font-semibold text-gray-700">
+              No debit accounts found
+            </p>
             <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              {searchQuery ? "No accounts match your search filter." : "Add your first SCB debit account above to have it auto-load in the generator."}
+              {searchQuery
+                ? "No accounts match your search filter."
+                : "Add your first SCB debit account above to have it auto-load in the generator."}
             </p>
           </div>
         ) : (
@@ -435,7 +522,10 @@ ON CONFLICT DO NOTHING;`;
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredAccounts.map((acc) => (
-                    <tr key={acc.id} className="hover:bg-blue-50/40 transition-colors">
+                    <tr
+                      key={acc.id}
+                      className="hover:bg-blue-50/40 transition-colors"
+                    >
                       <td className="py-3.5 px-4 font-semibold text-gray-900">
                         {acc.account_label}
                       </td>
@@ -488,11 +578,18 @@ ON CONFLICT DO NOTHING;`;
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-gray-100">
               {filteredAccounts.map((acc) => (
-                <div key={acc.id} className="p-4 space-y-2.5 hover:bg-gray-50/60 transition-colors">
+                <div
+                  key={acc.id}
+                  className="p-4 space-y-2.5 hover:bg-gray-50/60 transition-colors"
+                >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">{acc.account_label}</h3>
-                      <p className="text-xs text-gray-500">{acc.bank_name || "Standard Chartered Bank"}</p>
+                      <h3 className="font-semibold text-gray-900 text-sm">
+                        {acc.account_label}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {acc.bank_name || "Standard Chartered Bank"}
+                      </p>
                     </div>
                     {acc.is_default ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-800">
@@ -544,7 +641,9 @@ ON CONFLICT DO NOTHING;`;
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b mb-4">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">Edit Debit Account</h3>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                Edit Debit Account
+              </h3>
               <button
                 type="button"
                 onClick={() => setEditingAccount(null)}
@@ -563,7 +662,12 @@ ON CONFLICT DO NOTHING;`;
                   type="text"
                   required
                   value={editFormData.account_number}
-                  onChange={(e) => setEditFormData({ ...editFormData, account_number: e.target.value })}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      account_number: e.target.value,
+                    })
+                  }
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 font-mono text-sm"
                 />
               </div>
@@ -576,7 +680,12 @@ ON CONFLICT DO NOTHING;`;
                   type="text"
                   required
                   value={editFormData.account_label}
-                  onChange={(e) => setEditFormData({ ...editFormData, account_label: e.target.value })}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      account_label: e.target.value,
+                    })
+                  }
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
                 />
               </div>
@@ -588,7 +697,12 @@ ON CONFLICT DO NOTHING;`;
                 <input
                   type="text"
                   value={editFormData.bank_name}
-                  onChange={(e) => setEditFormData({ ...editFormData, bank_name: e.target.value })}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      bank_name: e.target.value,
+                    })
+                  }
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm"
                 />
               </div>
@@ -597,7 +711,12 @@ ON CONFLICT DO NOTHING;`;
                 <input
                   type="checkbox"
                   checked={editFormData.is_default}
-                  onChange={(e) => setEditFormData({ ...editFormData, is_default: e.target.checked })}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      is_default: e.target.checked,
+                    })
+                  }
                   className="w-4 h-4 text-blue-600 rounded"
                 />
                 <span className="font-medium">Mark as Default Account</span>
@@ -631,9 +750,19 @@ ON CONFLICT DO NOTHING;`;
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h3 className="text-center text-lg font-bold text-gray-900 mb-1">Delete Debit Account</h3>
+            <h3 className="text-center text-lg font-bold text-gray-900 mb-1">
+              Delete Debit Account
+            </h3>
             <p className="text-center text-xs sm:text-sm text-gray-500 mb-5">
-              Are you sure you want to remove <span className="font-semibold text-gray-800">{deletingAccount.account_label}</span> (<span className="font-mono">{deletingAccount.account_number}</span>)?
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-gray-800">
+                {deletingAccount.account_label}
+              </span>{" "}
+              (
+              <span className="font-mono">
+                {deletingAccount.account_number}
+              </span>
+              )?
             </p>
 
             <div className="flex items-center gap-3">
@@ -664,7 +793,9 @@ ON CONFLICT DO NOTHING;`;
             <div className="flex items-center justify-between pb-3 border-b mb-3">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-blue-600" />
-                <h3 className="text-base sm:text-lg font-bold text-gray-900">Supabase SQL Setup</h3>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                  Supabase SQL Setup
+                </h3>
               </div>
               <button
                 type="button"
@@ -676,17 +807,25 @@ ON CONFLICT DO NOTHING;`;
             </div>
 
             <p className="text-xs sm:text-sm text-gray-600 mb-3">
-              Run this SQL script in your <strong>Supabase Dashboard → SQL Editor</strong> to create the table and enable instant sync:
+              Run this SQL script in your{" "}
+              <strong>Supabase Dashboard → SQL Editor</strong> to create the
+              table and enable instant sync:
             </p>
 
             <div className="relative flex-1 overflow-hidden rounded-xl border bg-gray-950 p-4 font-mono text-xs text-gray-200">
-              <pre className="overflow-x-auto max-h-64 whitespace-pre">{sqlSetupScript}</pre>
+              <pre className="overflow-x-auto max-h-64 whitespace-pre">
+                {sqlSetupScript}
+              </pre>
               <button
                 type="button"
                 onClick={copySql}
                 className="absolute top-3 right-3 bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
               >
-                {copiedSql ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedSql ? (
+                  <Check className="w-3.5 h-3.5 text-green-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
                 <span>{copiedSql ? "Copied!" : "Copy SQL"}</span>
               </button>
             </div>

@@ -1,9 +1,17 @@
-'use client'
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileSpreadsheet, Users, CreditCard, Menu, X, ArrowLeft, Home } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Users,
+  CreditCard,
+  Menu,
+  X,
+  ArrowLeft,
+  Home,
+} from "lucide-react";
 
 const navItems = [
   {
@@ -52,7 +60,9 @@ export default function SCBSidebar() {
             <h1 className="text-sm font-bold text-slate-900 leading-tight truncate">
               SCB Transection
             </h1>
-            <p className="text-[11px] text-slate-500 font-medium">Bulk Excel Generator</p>
+            <p className="text-[11px] text-slate-500 font-medium">
+              Bulk Excel Generator
+            </p>
           </div>
         </div>
         <button
@@ -69,7 +79,9 @@ export default function SCBSidebar() {
       <nav className="p-3 space-y-1.5 flex-1 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/scb-tools" && pathname.startsWith(item.href));
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/scb-tools" && pathname.startsWith(item.href));
 
           return (
             <Link
@@ -84,7 +96,9 @@ export default function SCBSidebar() {
             >
               <Icon
                 className={`w-4.5 h-4.5 mr-3 transition-colors shrink-0 ${
-                  isActive ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-600"
+                  isActive
+                    ? "text-emerald-600"
+                    : "text-slate-400 group-hover:text-slate-600"
                 }`}
               />
               <span className="truncate">{item.name}</span>
@@ -99,7 +113,10 @@ export default function SCBSidebar() {
       {/* Footer Info */}
       <div className="p-3.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
         <span>Themefisher Admin Tools</span>
-        <Link href="/" className="hover:text-emerald-600 flex items-center gap-1">
+        <Link
+          href="/"
+          className="hover:text-emerald-600 flex items-center gap-1"
+        >
           <Home className="w-3 h-3" /> Home
         </Link>
       </div>
@@ -122,7 +139,9 @@ export default function SCBSidebar() {
             SCB
           </div>
           <div>
-            <h1 className="text-sm font-bold text-slate-900 leading-tight">SCB Transection</h1>
+            <h1 className="text-sm font-bold text-slate-900 leading-tight">
+              SCB Transection
+            </h1>
           </div>
         </div>
 

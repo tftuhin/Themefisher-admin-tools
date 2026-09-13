@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Search, X, Check } from "lucide-react";
@@ -61,7 +61,10 @@ export default function SearchableVendorSelect({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         closeDropdown();
       }
     };
@@ -111,13 +114,13 @@ export default function SearchableVendorSelect({
       case "ArrowDown":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev < filteredVendors.length - 1 ? prev + 1 : 0
+          prev < filteredVendors.length - 1 ? prev + 1 : 0,
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredVendors.length - 1
+          prev > 0 ? prev - 1 : filteredVendors.length - 1,
         );
         break;
       case "Enter":
@@ -135,7 +138,11 @@ export default function SearchableVendorSelect({
   };
 
   return (
-    <div ref={containerRef} className="relative w-full" onKeyDown={handleKeyDown}>
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      onKeyDown={handleKeyDown}
+    >
       <button
         type="button"
         disabled={disabled}
@@ -144,8 +151,8 @@ export default function SearchableVendorSelect({
           disabled
             ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
             : isOpen
-            ? "border-emerald-500 ring-2 ring-emerald-500/20"
-            : "border-slate-300 hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              ? "border-emerald-500 ring-2 ring-emerald-500/20"
+              : "border-slate-300 hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
         }`}
       >
         <div className="flex items-center min-w-0 flex-1 mr-2">
@@ -155,7 +162,8 @@ export default function SearchableVendorSelect({
                 {selectedVendor.receiver_name}
               </span>
               <span className="block truncate text-[11px] text-slate-500">
-                {selectedVendor.bank_name} • A/C: {selectedVendor.account_number}
+                {selectedVendor.bank_name} • A/C:{" "}
+                {selectedVendor.account_number}
               </span>
             </div>
           ) : (
@@ -208,10 +216,16 @@ export default function SearchableVendorSelect({
           </div>
 
           {/* List */}
-          <ul ref={listRef} role="listbox" className="max-h-56 overflow-y-auto divide-y divide-slate-100 p-1">
+          <ul
+            ref={listRef}
+            role="listbox"
+            className="max-h-56 overflow-y-auto divide-y divide-slate-100 p-1"
+          >
             {filteredVendors.length === 0 ? (
               <li className="py-5 px-3 text-center text-xs text-slate-400">
-                {searchQuery ? `No receivers matching "${searchQuery}"` : "No receiver bank AC available"}
+                {searchQuery
+                  ? `No receivers matching "${searchQuery}"`
+                  : "No receiver bank AC available"}
               </li>
             ) : (
               filteredVendors.map((v, index) => {
@@ -229,12 +243,14 @@ export default function SearchableVendorSelect({
                       isSelected
                         ? "bg-emerald-50 text-emerald-900 font-semibold"
                         : isHighlighted
-                        ? "bg-slate-50 text-slate-900"
-                        : "text-slate-700 hover:bg-slate-50"
+                          ? "bg-slate-50 text-slate-900"
+                          : "text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     <div className="min-w-0 flex-1 pr-2">
-                      <div className="text-sm font-medium truncate">{v.receiver_name}</div>
+                      <div className="text-sm font-medium truncate">
+                        {v.receiver_name}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5 truncate">
                         <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[10px]">
                           {v.account_number}
@@ -243,7 +259,9 @@ export default function SearchableVendorSelect({
                         {v.branch_name && <span>({v.branch_name})</span>}
                       </div>
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-600 shrink-0 ml-2" />}
+                    {isSelected && (
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 ml-2" />
+                    )}
                   </li>
                 );
               })

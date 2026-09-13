@@ -1,9 +1,9 @@
-'use client'
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { supabase } from "@/lib/supabase"
-import { useForm } from "react-hook-form"
-import type { Client, ClientFormData } from "@/types"
-import { EditClientModal } from "@/components/EditClientModal"
+"use client";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { supabase } from "@/lib/supabase";
+import { useForm } from "react-hook-form";
+import type { Client, ClientFormData } from "@/types";
+import { EditClientModal } from "@/components/EditClientModal";
 import {
   Building2,
   MapPin,
@@ -14,136 +14,148 @@ import {
   PlusCircle,
   Users,
   FileText,
-} from "lucide-react"
+} from "lucide-react";
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([])
-  const { register, handleSubmit, reset } = useForm<ClientFormData>()
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [clients, setClients] = useState<Client[]>([]);
+  const { register, handleSubmit, reset } = useForm<ClientFormData>();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Edit modal state
-  const [editingClient, setEditingClient] = useState<Client | null>(null)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchClients = useCallback(async () => {
     const { data, error } = await supabase
       .from("clients")
       .select("*")
-      .order("name", { ascending: true })
+      .order("name", { ascending: true });
     if (error) {
-      console.error("Error fetching clients:", error.message)
+      console.error("Error fetching clients:", error.message);
     } else if (data) {
-      setClients(data as Client[])
+      setClients(data as Client[]);
     }
-    setLoading(false)
-  }, [])
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    let ignore = false
+    let ignore = false;
     async function load() {
       const { data, error } = await supabase
         .from("clients")
         .select("*")
-        .order("name", { ascending: true })
+        .order("name", { ascending: true });
       if (!ignore) {
         if (error) {
-          console.error("Error fetching clients:", error.message)
+          console.error("Error fetching clients:", error.message);
         } else if (data) {
-          setClients(data as Client[])
+          setClients(data as Client[]);
         }
-        setLoading(false)
+        setLoading(false);
       }
     }
-    void load()
+    void load();
     return () => {
-      ignore = true
-    }
-  }, [])
+      ignore = true;
+    };
+  }, []);
 
   const onSubmit = async (data: ClientFormData) => {
-    const cleanName = data.name?.trim()
+    const cleanName = data.name?.trim();
     if (!cleanName) {
-      alert("Client name is required.")
-      return
+      alert("Client name is required.");
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     const payload: Record<string, unknown> = {
       name: cleanName,
       address: data.address?.trim() || null,
       tax_id: data.tax_id?.trim() || null,
       bank_name: data.bank_name?.trim() || null,
       bank_address: data.bank_address?.trim() || null,
-    }
+    };
 
-    let { error } = await supabase.from("clients").insert([payload])
+    let { error } = await supabase.from("clients").insert([payload]);
 
     // Fallback if 'tax_id' column doesn't exist yet in Supabase
-    if (error && (error.code === "42703" || error.message?.includes("tax_id"))) {
-      delete payload.tax_id
-      const fallbackRes = await supabase.from("clients").insert([payload])
-      error = fallbackRes.error
+    if (
+      error &&
+      (error.code === "42703" || error.message?.includes("tax_id"))
+    ) {
+      delete payload.tax_id;
+      const fallbackRes = await supabase.from("clients").insert([payload]);
+      error = fallbackRes.error;
       if (!error && data.tax_id?.trim()) {
         alert(
-          "Client added! Note: To permanently store VAT/Tax IDs in Supabase, please run this in your Supabase SQL Editor:\n\nALTER TABLE clients ADD COLUMN IF NOT EXISTS tax_id TEXT;"
-        )
+          "Client added! Note: To permanently store VAT/Tax IDs in Supabase, please run this in your Supabase SQL Editor:\n\nALTER TABLE clients ADD COLUMN IF NOT EXISTS tax_id TEXT;",
+        );
       }
     }
 
-    setSubmitting(false)
+    setSubmitting(false);
 
     if (!error) {
-      reset()
-      await fetchClients()
+      reset();
+      await fetchClients();
     } else {
-      console.error("Error creating client:", error.message)
-      alert("Unable to create client. Please try again.")
+      console.error("Error creating client:", error.message);
+      alert("Unable to create client. Please try again.");
     }
-  }
+  };
 
   const handleEditClient = (client: Client) => {
-    setEditingClient(client)
-    setIsEditModalOpen(true)
-  }
+    setEditingClient(client);
+    setIsEditModalOpen(true);
+  };
 
   const handleClientSaved = (updated: Client) => {
     setClients((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c)).sort((a, b) => a.name.localeCompare(b.name))
-    )
-  }
+      prev
+        .map((c) => (c.id === updated.id ? updated : c))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  };
 
   const deleteClient = async (client: Client) => {
-    if (!confirm(`Are you sure you want to delete client "${client.name}"?`)) return
-    const { error } = await supabase.from("clients").delete().eq("id", client.id)
+    if (!confirm(`Are you sure you want to delete client "${client.name}"?`))
+      return;
+    const { error } = await supabase
+      .from("clients")
+      .delete()
+      .eq("id", client.id);
     if (!error) {
-      setClients((prev) => prev.filter((c) => c.id !== client.id))
+      setClients((prev) => prev.filter((c) => c.id !== client.id));
     } else {
-      console.error("Error deleting client:", error.message)
-      alert("Unable to delete client. Please try again.")
+      console.error("Error deleting client:", error.message);
+      alert("Unable to delete client. Please try again.");
     }
-  }
+  };
 
   // Filter clients by search
   const filteredClients = useMemo(() => {
-    if (!searchTerm.trim()) return clients
-    const q = searchTerm.toLowerCase()
+    if (!searchTerm.trim()) return clients;
+    const q = searchTerm.toLowerCase();
     return clients.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         (c.address && c.address.toLowerCase().includes(q)) ||
         (c.tax_id && c.tax_id.toLowerCase().includes(q)) ||
-        (c.bank_name && c.bank_name.toLowerCase().includes(q))
-    )
-  }, [clients, searchTerm])
+        (c.bank_name && c.bank_name.toLowerCase().includes(q)),
+    );
+  }, [clients, searchTerm]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-16">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Clients</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Clients
+        </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage clients, remitting banks, and addresses for your invoices and Form-C declarations.
+          Manage clients, remitting banks, and addresses for your invoices and
+          Form-C declarations.
         </p>
       </div>
 
@@ -184,7 +196,10 @@ export default function ClientsPage() {
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-gray-400" />
-                VAT / Tax ID <span className="text-xs font-normal text-gray-500">(Optional)</span>
+                VAT / Tax ID{" "}
+                <span className="text-xs font-normal text-gray-500">
+                  (Optional)
+                </span>
               </label>
               <input
                 {...register("tax_id")}
@@ -242,9 +257,12 @@ export default function ClientsPage() {
               <Users className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">Client Directory</h2>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                Client Directory
+              </h2>
               <p className="text-xs text-gray-500">
-                {clients.length} registered {clients.length === 1 ? "client" : "clients"}
+                {clients.length} registered{" "}
+                {clients.length === 1 ? "client" : "clients"}
               </p>
             </div>
           </div>
@@ -263,7 +281,9 @@ export default function ClientsPage() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading clients...</div>
+          <div className="p-8 text-center text-gray-500">
+            Loading clients...
+          </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {filteredClients.map((client) => (
@@ -273,7 +293,9 @@ export default function ClientsPage() {
               >
                 <div className="space-y-1.5 flex-1 min-w-0 pr-0 sm:pr-4">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-base text-gray-900 truncate">{client.name}</h3>
+                    <h3 className="font-bold text-base text-gray-900 truncate">
+                      {client.name}
+                    </h3>
                     {client.tax_id && (
                       <span className="text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-lg shrink-0">
                         VAT/Tax ID: {client.tax_id}
@@ -284,7 +306,9 @@ export default function ClientsPage() {
                   {client.address && (
                     <div className="text-xs text-gray-600 flex items-start gap-1.5 break-words">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                      <span className="whitespace-pre-line leading-relaxed">{client.address}</span>
+                      <span className="whitespace-pre-line leading-relaxed">
+                        {client.address}
+                      </span>
                     </div>
                   )}
 
@@ -292,7 +316,11 @@ export default function ClientsPage() {
                     <div className="text-xs text-gray-500 flex items-center gap-1.5 pt-0.5 flex-wrap">
                       <Landmark className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span>
-                        {client.bank_name && <strong className="text-gray-700">{client.bank_name}</strong>}
+                        {client.bank_name && (
+                          <strong className="text-gray-700">
+                            {client.bank_name}
+                          </strong>
+                        )}
                         {client.bank_name && client.bank_address && " — "}
                         {client.bank_address}
                       </span>
@@ -327,7 +355,9 @@ export default function ClientsPage() {
 
             {filteredClients.length === 0 && (
               <div className="p-8 text-center text-gray-500 text-sm">
-                {searchTerm ? "No clients match your search query." : "No clients found."}
+                {searchTerm
+                  ? "No clients match your search query."
+                  : "No clients found."}
               </div>
             )}
           </div>
@@ -342,5 +372,5 @@ export default function ClientsPage() {
         onSaved={handleClientSaved}
       />
     </div>
-  )
+  );
 }

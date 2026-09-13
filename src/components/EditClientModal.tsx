@@ -1,14 +1,14 @@
-'use client'
-import { useState } from "react"
-import { supabase } from "@/lib/supabase"
-import type { Client } from "@/types"
-import { X, Save, Building2, MapPin, Landmark, FileText } from "lucide-react"
+"use client";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import type { Client } from "@/types";
+import { X, Save, Building2, MapPin, Landmark, FileText } from "lucide-react";
 
 interface EditClientModalProps {
-  client: Client | null
-  isOpen: boolean
-  onClose: () => void
-  onSaved: (updated: Client) => void
+  client: Client | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSaved: (updated: Client) => void;
 }
 
 function EditClientForm({
@@ -16,27 +16,27 @@ function EditClientForm({
   onClose,
   onSaved,
 }: {
-  client: Client
-  onClose: () => void
-  onSaved: (updated: Client) => void
+  client: Client;
+  onClose: () => void;
+  onSaved: (updated: Client) => void;
 }) {
-  const [name, setName] = useState(client.name || "")
-  const [address, setAddress] = useState(client.address || "")
-  const [taxId, setTaxId] = useState(client.tax_id || "")
-  const [bankName, setBankName] = useState(client.bank_name || "")
-  const [bankAddress, setBankAddress] = useState(client.bank_address || "")
-  const [saving, setSaving] = useState(false)
-  const [errorMsg, setErrorMsg] = useState("")
+  const [name, setName] = useState(client.name || "");
+  const [address, setAddress] = useState(client.address || "");
+  const [taxId, setTaxId] = useState(client.tax_id || "");
+  const [bankName, setBankName] = useState(client.bank_name || "");
+  const [bankAddress, setBankAddress] = useState(client.bank_address || "");
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!name.trim()) {
-      setErrorMsg("Client name is required.")
-      return
+      setErrorMsg("Client name is required.");
+      return;
     }
 
-    setSaving(true)
-    setErrorMsg("")
+    setSaving(true);
+    setErrorMsg("");
 
     const updatePayload: Record<string, unknown> = {
       name: name.trim(),
@@ -44,42 +44,46 @@ function EditClientForm({
       tax_id: taxId.trim() || null,
       bank_name: bankName.trim(),
       bank_address: bankAddress.trim(),
-    }
+    };
 
     let { data, error } = await supabase
       .from("clients")
       .update(updatePayload)
       .eq("id", client.id)
-      .select()
+      .select();
 
     // Fallback if 'tax_id' column doesn't exist yet in Supabase
-    if (error && (error.code === "42703" || error.message?.includes("tax_id"))) {
-      delete updatePayload.tax_id
+    if (
+      error &&
+      (error.code === "42703" || error.message?.includes("tax_id"))
+    ) {
+      delete updatePayload.tax_id;
       const fallback = await supabase
         .from("clients")
         .update(updatePayload)
         .eq("id", client.id)
-        .select()
-      data = fallback.data
-      error = fallback.error
+        .select();
+      data = fallback.data;
+      error = fallback.error;
       if (!error && taxId.trim()) {
         alert(
-          "Client updated! Note: To permanently store VAT/Tax IDs in Supabase, please run this in your Supabase SQL Editor:\n\nALTER TABLE clients ADD COLUMN IF NOT EXISTS tax_id TEXT;"
-        )
+          "Client updated! Note: To permanently store VAT/Tax IDs in Supabase, please run this in your Supabase SQL Editor:\n\nALTER TABLE clients ADD COLUMN IF NOT EXISTS tax_id TEXT;",
+        );
       }
     }
 
-    setSaving(false)
+    setSaving(false);
 
     if (error) {
-      console.error("Failed to update client:", error.message)
-      setErrorMsg("Unable to update client details. Please try again.")
+      console.error("Failed to update client:", error.message);
+      setErrorMsg("Unable to update client details. Please try again.");
     } else {
-      const updatedClient = data && data[0] ? (data[0] as Client) : { ...client, ...updatePayload }
-      onSaved(updatedClient)
-      onClose()
+      const updatedClient =
+        data && data[0] ? (data[0] as Client) : { ...client, ...updatePayload };
+      onSaved(updatedClient);
+      onClose();
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full flex flex-col border border-gray-200 overflow-hidden my-auto max-h-[90vh]">
@@ -90,8 +94,12 @@ function EditClientForm({
             <Building2 className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900">Edit Client</h2>
-            <p className="text-xs text-gray-500 truncate max-w-[200px] sm:max-w-[280px]">{client.name}</p>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">
+              Edit Client
+            </h2>
+            <p className="text-xs text-gray-500 truncate max-w-[200px] sm:max-w-[280px]">
+              {client.name}
+            </p>
           </div>
         </div>
         <button
@@ -111,7 +119,10 @@ function EditClientForm({
       )}
 
       {/* Form Body */}
-      <form onSubmit={handleSave} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+      <form
+        onSubmit={handleSave}
+        className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1"
+      >
         <div>
           <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5 text-gray-400" />
@@ -146,7 +157,10 @@ function EditClientForm({
         <div>
           <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-gray-400" />
-            VAT / Tax ID <span className="text-xs font-normal text-gray-500">(Optional)</span>
+            VAT / Tax ID{" "}
+            <span className="text-xs font-normal text-gray-500">
+              (Optional)
+            </span>
           </label>
           <input
             type="text"
@@ -215,7 +229,7 @@ function EditClientForm({
         </div>
       </form>
     </div>
-  )
+  );
 }
 
 export function EditClientModal({
@@ -224,11 +238,16 @@ export function EditClientModal({
   onClose,
   onSaved,
 }: EditClientModalProps) {
-  if (!isOpen || !client) return null
+  if (!isOpen || !client) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-      <EditClientForm key={client.id} client={client} onClose={onClose} onSaved={onSaved} />
+      <EditClientForm
+        key={client.id}
+        client={client}
+        onClose={onClose}
+        onSaved={onSaved}
+      />
     </div>
-  )
+  );
 }

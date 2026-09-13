@@ -1,20 +1,33 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { FileText, PlusSquare, Users, Settings, Menu, X, ArrowLeft, Home } from 'lucide-react'
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  FileText,
+  PlusSquare,
+  Users,
+  Settings,
+  Menu,
+  X,
+  ArrowLeft,
+  Home,
+} from "lucide-react";
 
 export function InvoiceSidebar() {
-  const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
-    { name: 'Create Invoice', href: '/invoice-tools/create-invoice', icon: PlusSquare },
-    { name: 'Generate Inward Docs', href: '/invoice-tools', icon: FileText },
-    { name: 'Clients', href: '/invoice-tools/clients', icon: Users },
-    { name: 'Configuration', href: '/invoice-tools/settings', icon: Settings },
-  ]
+    {
+      name: "Create Invoice",
+      href: "/invoice-tools/create-invoice",
+      icon: PlusSquare,
+    },
+    { name: "Generate Inward Docs", href: "/invoice-tools", icon: FileText },
+    { name: "Clients", href: "/invoice-tools/clients", icon: Users },
+    { name: "Configuration", href: "/invoice-tools/settings", icon: Settings },
+  ];
 
   const navContent = (
     <>
@@ -55,8 +68,10 @@ export function InvoiceSidebar() {
       {/* Navigation Links */}
       <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
         {links.map((link) => {
-          const Icon = link.icon
-          const isActive = pathname === link.href || (link.href !== '/invoice-tools' && pathname.startsWith(link.href))
+          const Icon = link.icon;
+          const isActive =
+            pathname === link.href ||
+            (link.href !== "/invoice-tools" && pathname.startsWith(link.href));
           return (
             <Link
               key={link.name}
@@ -64,14 +79,16 @@ export function InvoiceSidebar() {
               onClick={() => setMobileOpen(false)}
               className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98] ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-100/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent'
+                  ? "bg-blue-50 text-blue-700 font-semibold border border-blue-100/80 shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent"
               }`}
             >
-              <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+              <Icon
+                className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`}
+              />
               <span className="truncate">{link.name}</span>
             </Link>
-          )
+          );
         })}
       </nav>
 
@@ -83,7 +100,7 @@ export function InvoiceSidebar() {
         </Link>
       </div>
     </>
-  )
+  );
 
   return (
     <>
@@ -126,7 +143,7 @@ export function InvoiceSidebar() {
       {/* Mobile Slide-out Drawer */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white text-slate-800 flex flex-col shadow-2xl transition-transform duration-200 ease-in-out md:hidden ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {navContent}
@@ -137,5 +154,5 @@ export function InvoiceSidebar() {
         {navContent}
       </aside>
     </>
-  )
+  );
 }

@@ -1,85 +1,93 @@
-'use client'
-import { useState, useEffect, useRef, Suspense } from "react"
-import { supabase } from "@/lib/supabase"
-import { useReactToPrint } from "react-to-print"
-import { CForm } from "@/components/CForm"
-import { BankInvoice } from "@/components/BankInvoice"
-import type { Client, Invoice, PaymentAccount } from "@/types"
-import { Printer, FileText, CheckCircle2, ArrowRight } from "lucide-react"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import SearchableClientSelect from "@/components/SearchableClientSelect"
+"use client";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { supabase } from "@/lib/supabase";
+import { useReactToPrint } from "react-to-print";
+import { CForm } from "@/components/CForm";
+import { BankInvoice } from "@/components/BankInvoice";
+import type { Client, Invoice, PaymentAccount } from "@/types";
+import { Printer, FileText, CheckCircle2, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import SearchableClientSelect from "@/components/SearchableClientSelect";
 
-type ViewTab = "all" | "invoice" | "cform"
+type ViewTab = "all" | "invoice" | "cform";
 
 function GenerateDocsContent() {
-  const searchParams = useSearchParams()
-  const queryInvoiceId = searchParams.get("invoiceId")
+  const searchParams = useSearchParams();
+  const queryInvoiceId = searchParams.get("invoiceId");
 
-  const [clients, setClients] = useState<Client[]>([])
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
+  const [clients, setClients] = useState<Client[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
 
-  const [selectedClientId, setSelectedClientId] = useState("")
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState("")
-  const [activeTab, setActiveTab] = useState<ViewTab>("all")
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState("");
+  const [activeTab, setActiveTab] = useState<ViewTab>("all");
 
   useEffect(() => {
-    let ignore = false
+    let ignore = false;
     async function fetchData() {
       const [cRes, iRes, pRes] = await Promise.all([
         supabase.from("clients").select("*").order("name"),
-        supabase.from("invoices").select("*").order("created_at", { ascending: false }),
+        supabase
+          .from("invoices")
+          .select("*")
+          .order("created_at", { ascending: false }),
         supabase.from("payment_accounts").select("*"),
-      ])
+      ]);
       if (!ignore) {
-        const clientList = (cRes.data as Client[]) || []
-        const invoiceList = (iRes.data as Invoice[]) || []
-        setClients(clientList)
-        setInvoices(invoiceList)
-        if (pRes.data) setPaymentAccounts(pRes.data as PaymentAccount[])
+        const clientList = (cRes.data as Client[]) || [];
+        const invoiceList = (iRes.data as Invoice[]) || [];
+        setClients(clientList);
+        setInvoices(invoiceList);
+        if (pRes.data) setPaymentAccounts(pRes.data as PaymentAccount[]);
 
         if (queryInvoiceId) {
-          const matchedInv = invoiceList.find((i) => i.id === queryInvoiceId)
+          const matchedInv = invoiceList.find((i) => i.id === queryInvoiceId);
           if (matchedInv) {
-            setSelectedClientId(matchedInv.client_id)
-            setSelectedInvoiceId(matchedInv.id)
-            return
+            setSelectedClientId(matchedInv.client_id);
+            setSelectedInvoiceId(matchedInv.id);
+            return;
           }
         }
       }
     }
-    void fetchData()
+    void fetchData();
     return () => {
-      ignore = true
-    }
-  }, [queryInvoiceId])
+      ignore = true;
+    };
+  }, [queryInvoiceId]);
 
-  const filteredInvoices = invoices.filter((i) => i.client_id === selectedClientId)
+  const filteredInvoices = invoices.filter(
+    (i) => i.client_id === selectedClientId,
+  );
 
-  const selectedClient = clients.find((c) => c.id === selectedClientId)
-  const selectedInvoice = invoices.find((i) => i.id === selectedInvoiceId)
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+  const selectedInvoice = invoices.find((i) => i.id === selectedInvoiceId);
 
-  const cFormRef = useRef<HTMLDivElement>(null)
-  const bankInvoiceRef = useRef<HTMLDivElement>(null)
+  const cFormRef = useRef<HTMLDivElement>(null);
+  const bankInvoiceRef = useRef<HTMLDivElement>(null);
 
   const handlePrintCForm = useReactToPrint({
     contentRef: cFormRef,
     documentTitle: `C-Form-${selectedInvoice?.invoice_number || "doc"}`,
-  })
+  });
 
   const handlePrintBankInvoice = useReactToPrint({
     contentRef: bankInvoiceRef,
     documentTitle: `Bank-Invoice-${selectedInvoice?.invoice_number || "doc"}`,
-  })
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-16">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Generate Inward Docs</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Generate Inward Docs
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Generate and export pixel-perfect Bank Invoices and Form-C (ICT) declarations.
+            Generate and export pixel-perfect Bank Invoices and Form-C (ICT)
+            declarations.
           </p>
         </div>
         <Link
@@ -93,19 +101,23 @@ function GenerateDocsContent() {
 
       <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div className="relative z-20">
-          <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Select Client</label>
+          <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">
+            Select Client
+          </label>
           <SearchableClientSelect
             clients={clients}
             value={selectedClientId}
             onChange={(val) => {
-              setSelectedClientId(val)
-              setSelectedInvoiceId("")
+              setSelectedClientId(val);
+              setSelectedInvoiceId("");
             }}
             placeholder="-- Choose a Client --"
           />
         </div>
         <div className="relative z-10">
-          <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">Select Invoice</label>
+          <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5">
+            Select Invoice
+          </label>
           <select
             value={selectedInvoiceId}
             onChange={(e) => setSelectedInvoiceId(e.target.value)}
@@ -115,7 +127,8 @@ function GenerateDocsContent() {
             <option value="">-- Choose an Invoice --</option>
             {filteredInvoices.map((i) => (
               <option key={i.id} value={i.id}>
-                {i.invoice_number} ({i.invoice_date}) — {i.currency || "USD"} {i.amount}
+                {i.invoice_number} ({i.invoice_date}) — {i.currency || "USD"}{" "}
+                {i.amount}
               </option>
             ))}
           </select>
@@ -260,7 +273,9 @@ function GenerateDocsContent() {
             <FileText className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-gray-900 mb-1">
-            {!selectedClientId ? "Select a Client to Begin" : "Select an Invoice to Preview"}
+            {!selectedClientId
+              ? "Select a Client to Begin"
+              : "Select an Invoice to Preview"}
           </h3>
           <p className="text-xs text-gray-500 max-w-sm mx-auto">
             {!selectedClientId
@@ -270,13 +285,19 @@ function GenerateDocsContent() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export default function GenerateDocsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading documents...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-gray-500">
+          Loading documents...
+        </div>
+      }
+    >
       <GenerateDocsContent />
     </Suspense>
-  )
+  );
 }

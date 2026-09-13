@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase, isSupabaseConfigured, type Vendor, type DebitAccount } from "@/lib/supabase";
+import {
+  supabase,
+  isSupabaseConfigured,
+  type Vendor,
+  type DebitAccount,
+} from "@/lib/supabase";
 import SearchableVendorSelect from "@/components/SearchableVendorSelect";
-import { Plus, Trash2, FileSpreadsheet, AlertCircle, RotateCcw } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  FileSpreadsheet,
+  AlertCircle,
+  RotateCcw,
+} from "lucide-react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
@@ -19,7 +30,13 @@ type TransferRow = {
 export default function GeneratorPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [rows, setRows] = useState<TransferRow[]>([
-    { id: crypto.randomUUID(), vendorId: null, amount: "", description: "", transferDate: "" }
+    {
+      id: crypto.randomUUID(),
+      vendorId: null,
+      amount: "",
+      description: "",
+      transferDate: "",
+    },
   ]);
   const [debitAccount, setDebitAccount] = useState<string>("");
   const [debitAccounts, setDebitAccounts] = useState<DebitAccount[]>([]);
@@ -40,7 +57,10 @@ export default function GeneratorPage() {
             const defaultAcc = data.find((a) => a.is_default) || data[0];
             if (defaultAcc?.account_number) {
               setDebitAccount(defaultAcc.account_number);
-              localStorage.setItem("scb_debit_account", defaultAcc.account_number);
+              localStorage.setItem(
+                "scb_debit_account",
+                defaultAcc.account_number,
+              );
               return;
             }
           }
@@ -76,73 +96,105 @@ export default function GeneratorPage() {
   }, []);
 
   const addRow = () => {
-    setRows([...rows, { id: crypto.randomUUID(), vendorId: null, amount: "", description: "", transferDate: "" }]);
+    setRows([
+      ...rows,
+      {
+        id: crypto.randomUUID(),
+        vendorId: null,
+        amount: "",
+        description: "",
+        transferDate: "",
+      },
+    ]);
   };
 
   const removeRow = (id: string) => {
     if (rows.length > 1) {
-      setRows(rows.filter(r => r.id !== id));
+      setRows(rows.filter((r) => r.id !== id));
     }
   };
 
-  const handleRowChange = (id: string, field: keyof TransferRow, value: string | null) => {
-    setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
+  const handleRowChange = (
+    id: string,
+    field: keyof TransferRow,
+    value: string | null,
+  ) => {
+    setRows(rows.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
   const handleReset = () => {
-    const hasData = rows.some(r => r.vendorId || r.amount || r.description || r.transferDate) || rows.length > 1;
+    const hasData =
+      rows.some(
+        (r) => r.vendorId || r.amount || r.description || r.transferDate,
+      ) || rows.length > 1;
     if (hasData) {
-      const confirmReset = window.confirm("Are you sure you want to reset and clear all transfer entries?");
+      const confirmReset = window.confirm(
+        "Are you sure you want to reset and clear all transfer entries?",
+      );
       if (!confirmReset) return;
     }
     setRows([
-      { id: crypto.randomUUID(), vendorId: null, amount: "", description: "", transferDate: "" }
+      {
+        id: crypto.randomUUID(),
+        vendorId: null,
+        amount: "",
+        description: "",
+        transferDate: "",
+      },
     ]);
   };
 
   const handleGenerateExcel = () => {
     // Validate rows
-    const validRows = rows.filter(r => r.vendorId && r.amount && r.transferDate);
-    
+    const validRows = rows.filter(
+      (r) => r.vendorId && r.amount && r.transferDate,
+    );
+
     if (validRows.length === 0) {
-      alert("Please fill in all required fields (Vendor, Amount, Date) for at least one row.");
+      alert(
+        "Please fill in all required fields (Vendor, Amount, Date) for at least one row.",
+      );
       return;
     }
 
     if (!debitAccount.trim()) {
-      alert("Please enter a Debit Account Number before generating the Excel file.");
+      alert(
+        "Please enter a Debit Account Number before generating the Excel file.",
+      );
       return;
     }
 
-    const excelData = validRows.map(row => {
-      const vendor = vendors.find(v => v.id === row.vendorId);
-      if (!vendor) return null;
+    const excelData = validRows
+      .map((row) => {
+        const vendor = vendors.find((v) => v.id === row.vendorId);
+        if (!vendor) return null;
 
-      // Format date to DD/MM/YYYY
-      let formattedDate = "";
-      try {
-        formattedDate = format(new Date(row.transferDate), "dd/MM/yyyy");
-      } catch (e) {
-        console.error("Invalid date", e);
-      }
+        // Format date to DD/MM/YYYY
+        let formattedDate = "";
+        try {
+          formattedDate = format(new Date(row.transferDate), "dd/MM/yyyy");
+        } catch (e) {
+          console.error("Invalid date", e);
+        }
 
-      return {
-        "Customer Reference": "",
-        "Beneficiary Name(120)": vendor.receiver_name,
-        "Beneficiary Account Number": vendor.account_number,
-        "Routing Number": vendor.routing_number,
-        "Payment Amount": row.amount,
-        "Reason(140)": row.description,
-        "Date(DD/MM/YYYY)": formattedDate,
-        "Debit Account Number(Prefix- 00 BDT)": debitAccount.trim(),
-        "Beneficiary Email ID(Optional)": ""
-      };
-    }).filter(Boolean);
+        return {
+          "Customer Reference": "",
+          "Beneficiary Name(120)": vendor.receiver_name,
+          "Beneficiary Account Number": vendor.account_number,
+          "Routing Number": vendor.routing_number,
+          "Payment Amount": row.amount,
+          "Reason(140)": row.description,
+          "Date(DD/MM/YYYY)": formattedDate,
+          "Debit Account Number(Prefix- 00 BDT)": debitAccount.trim(),
+          "Beneficiary Email ID(Optional)": "",
+        };
+      })
+      .filter(Boolean);
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transfers");
-    
+
     // Generate and download
     const fileName = `SCB_Transfers_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`;
     XLSX.writeFile(workbook, fileName);
@@ -154,18 +206,26 @@ export default function GeneratorPage() {
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider mb-2">
           SCB Banking Tool
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SCB Transection Generator</h1>
-        <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">Create multiple transfer records and generate the bank Excel file.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          SCB Transection Generator
+        </h1>
+        <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">
+          Create multiple transfer records and generate the bank Excel file.
+        </p>
       </div>
 
       {/* Debit Account Dropdown Selector */}
       <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <label htmlFor="debit-account" className="block text-sm font-semibold text-gray-900">
+          <label
+            htmlFor="debit-account"
+            className="block text-sm font-semibold text-gray-900"
+          >
             SCB Debit Account Number *
           </label>
           <p className="text-xs text-gray-500 mt-0.5">
-            Funding account debited for transfers. Loaded automatically from your database.
+            Funding account debited for transfers. Loaded automatically from
+            your database.
           </p>
         </div>
         <div className="w-full sm:w-80">
@@ -179,7 +239,9 @@ export default function GeneratorPage() {
             {debitAccounts.length > 0 ? (
               debitAccounts.map((acc) => (
                 <option key={acc.id} value={acc.account_number}>
-                  {acc.account_number} — {acc.account_label || acc.bank_name || "SCB"} {acc.is_default ? "★" : ""}
+                  {acc.account_number} —{" "}
+                  {acc.account_label || acc.bank_name || "SCB"}{" "}
+                  {acc.is_default ? "★" : ""}
                 </option>
               ))
             ) : debitAccount ? (
@@ -200,7 +262,11 @@ export default function GeneratorPage() {
             <div className="text-xs sm:text-sm">
               <p className="font-semibold">Supabase connection required</p>
               <p className="mt-1">
-                Configure your Supabase URL & anon key in <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">.env.local</code> to pull saved beneficiary accounts into this dropdown.
+                Configure your Supabase URL & anon key in{" "}
+                <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">
+                  .env.local
+                </code>{" "}
+                to pull saved beneficiary accounts into this dropdown.
               </p>
             </div>
           </div>
@@ -216,13 +282,16 @@ export default function GeneratorPage() {
       <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-6">
         <div className="space-y-4">
           {rows.map((row, index) => (
-            <div key={row.id} className="p-3.5 sm:p-4 border rounded-xl bg-gray-50/70 hover:bg-gray-50 transition-colors space-y-3">
+            <div
+              key={row.id}
+              className="p-3.5 sm:p-4 border rounded-xl bg-gray-50/70 hover:bg-gray-50 transition-colors space-y-3"
+            >
               {/* Mobile Header for this row */}
               <div className="flex items-center justify-between md:hidden pb-2 border-b border-gray-200/70">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-600">
                   Transfer #{index + 1}
                 </span>
-                <button 
+                <button
                   onClick={() => removeRow(row.id)}
                   disabled={rows.length === 1}
                   className="p-1 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
@@ -235,7 +304,9 @@ export default function GeneratorPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 items-start">
                 {/* Vendor Selection */}
                 <div className="sm:col-span-2 md:col-span-4">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Receiver *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Receiver *
+                  </label>
                   <SearchableVendorSelect
                     vendors={vendors}
                     value={row.vendorId}
@@ -246,43 +317,55 @@ export default function GeneratorPage() {
 
                 {/* Amount */}
                 <div className="sm:col-span-1 md:col-span-2">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Amount *</label>
-                  <input 
-                    type="number" 
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Amount *
+                  </label>
+                  <input
+                    type="number"
                     value={row.amount}
-                    onChange={(e) => handleRowChange(row.id, "amount", e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
-                    placeholder="0.00" 
+                    onChange={(e) =>
+                      handleRowChange(row.id, "amount", e.target.value)
+                    }
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm"
+                    placeholder="0.00"
                   />
                 </div>
 
                 {/* Description (Max 100 chars) */}
                 <div className="sm:col-span-1 md:col-span-3">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Description (Max 100)</label>
-                  <input 
-                    type="text" 
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Description (Max 100)
+                  </label>
+                  <input
+                    type="text"
                     maxLength={100}
                     value={row.description}
-                    onChange={(e) => handleRowChange(row.id, "description", e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
-                    placeholder="Transfer reason..." 
+                    onChange={(e) =>
+                      handleRowChange(row.id, "description", e.target.value)
+                    }
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm"
+                    placeholder="Transfer reason..."
                   />
                 </div>
 
                 {/* Transfer Date */}
                 <div className="sm:col-span-1 md:col-span-2">
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Date *</label>
-                  <input 
-                    type="date" 
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
                     value={row.transferDate}
-                    onChange={(e) => handleRowChange(row.id, "transferDate", e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm" 
+                    onChange={(e) =>
+                      handleRowChange(row.id, "transferDate", e.target.value)
+                    }
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 min-h-[42px] text-sm"
                   />
                 </div>
 
                 {/* Desktop Remove Action */}
                 <div className="hidden md:flex md:col-span-1 items-end self-end h-[42px] mb-0.5 justify-center">
-                  <button 
+                  <button
                     onClick={() => removeRow(row.id)}
                     disabled={rows.length === 1}
                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
@@ -298,7 +381,7 @@ export default function GeneratorPage() {
 
         <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-t pt-6">
           <div className="flex items-center gap-2 sm:gap-3">
-            <button 
+            <button
               onClick={addRow}
               className="flex-1 sm:flex-none flex items-center justify-center text-blue-600 hover:text-blue-700 font-medium px-4 py-2.5 hover:bg-blue-50 rounded-xl transition-colors border border-blue-200 text-sm"
             >
@@ -306,7 +389,7 @@ export default function GeneratorPage() {
               Add Another Transfer
             </button>
 
-            <button 
+            <button
               onClick={handleReset}
               className="flex items-center justify-center text-gray-600 hover:text-red-600 font-medium px-3.5 py-2.5 hover:bg-red-50 rounded-xl transition-colors border border-gray-200 hover:border-red-200 text-sm"
               title="Reset form and clear all entries"
@@ -316,7 +399,7 @@ export default function GeneratorPage() {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={handleGenerateExcel}
             className="w-full sm:w-auto flex items-center justify-center bg-green-600 text-white px-6 py-2.5 rounded-xl hover:bg-green-700 transition-colors font-semibold shadow-sm text-sm"
           >

@@ -174,6 +174,15 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
 
+### 2026-09-14 09:42 — Fix TypeScript Build Error
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/components/CForm.tsx` — Removed the unused `parseInvoiceDate` function to fix Vercel deployment.
+**Decisions & notes:**
+- Next.js production builds fail on unused variables/functions. Removed the dead code left behind from the previous Form-C date change.
+
+---
+
 ### 2026-09-14 09:37 — Form-C Date Update
 **Agent/Dev:** Gemini (Antigravity)
 **Files changed:**

@@ -9,37 +9,6 @@ interface CFormProps {
   paymentAccounts?: PaymentAccount[];
 }
 
-function parseInvoiceDate(dateStr?: string): Date {
-  if (!dateStr) return new Date();
-  const d = new Date(dateStr);
-  if (!isNaN(d.getTime())) return d;
-  const parts = dateStr.split(/[-/ ]/);
-  if (parts.length === 3) {
-    const day = parseInt(parts[0], 10);
-    const months = [
-      "jan",
-      "feb",
-      "mar",
-      "apr",
-      "may",
-      "jun",
-      "jul",
-      "aug",
-      "sep",
-      "oct",
-      "nov",
-      "dec",
-    ];
-    const month = months.indexOf(parts[1].toLowerCase());
-    let year = parseInt(parts[2], 10);
-    if (year < 100) year += 2000;
-    if (!isNaN(day) && month !== -1 && !isNaN(year)) {
-      return new Date(year, month, day);
-    }
-  }
-  return new Date();
-}
-
 export const CForm = React.forwardRef<HTMLDivElement, CFormProps>(
   ({ invoice, client }, ref) => {
     if (!invoice || !client) return <div ref={ref}></div>;

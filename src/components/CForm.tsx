@@ -59,10 +59,7 @@ export const CForm = React.forwardRef<HTMLDivElement, CFormProps>(
       maximumFractionDigits: 2,
     });
 
-    const formCDate = format(
-      parseInvoiceDate(invoice.invoice_date),
-      "d MMM yyyy",
-    );
+    const formCDate = format(new Date(), "d MMM yyyy");
 
     return (
       <div

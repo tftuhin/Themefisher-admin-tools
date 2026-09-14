@@ -174,6 +174,15 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
 
+### 2026-09-14 09:37 — Form-C Date Update
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/components/CForm.tsx` — Updated Form-C date to always display the current date instead of the parsed invoice date.
+**Decisions & notes:**
+- Form-C represents a declaration made on the day it is generated/submitted, not necessarily the invoice issue date.
+
+---
+
 ### 2026-09-13 22:53 — Added Additional Transactions in Salary Sheet Modal
 **Agent/Dev:** Gemini (Antigravity)
 **Files changed:**

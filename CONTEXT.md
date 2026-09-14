@@ -1,6 +1,6 @@
 # PROJECT CONTEXT — Themefisher Admin Tools (Finance Tools Suite)
 
-> **🚨 MANDATORY FOR ALL AI AGENTS:** Read this entire file before writing any code. After making ANY change (even a single line), you MUST append a new entry to the **Development Log** at the bottom of this file. Commit this file together with your code changes. No exceptions.
+> **🚨 MANDATORY FOR ALL AI AGENTS:** Read this entire file before writing any code. After making ANY change (even a single line), you MUST prepend a new entry to the **Development Log** at the top of the log section. Commit this file together with your code changes. No exceptions.
 
 ---
 

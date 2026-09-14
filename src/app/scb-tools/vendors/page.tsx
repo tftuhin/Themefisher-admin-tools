@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { supabase, isSupabaseConfigured, type Vendor } from "@/lib/supabase";
+import { getVendors, createVendor, updateVendor, deleteVendor as deleteVendorAction } from "@/app/actions";
+import type { Vendor } from "@/types";
 import dynamic from "next/dynamic";
 
 const BankBranchSelect = dynamic(() => import("@/components/BankBranchSelect"), {
@@ -83,21 +84,10 @@ export default function VendorsPage() {
   };
 
   const fetchVendors = async () => {
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setErrorMessage(null);
-    const { data, error } = await supabase
-      .from("vendors")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching vendors:", error);
-      setErrorMessage(error.message);
-    } else {
+    try {
+      const data = await getVendors();
       const localCache = getLocalEmployeeCache();
       const merged: Vendor[] = (data || []).map((v: Vendor) => {
         const local = localCache[v.id];
@@ -108,6 +98,9 @@ export default function VendorsPage() {
         };
       });
       setVendors(merged);
+    } catch (error: any) {
+      console.error("Error fetching vendors:", error);
+      setErrorMessage(error.message);
     }
     setLoading(false);
   };
@@ -153,16 +146,9 @@ export default function VendorsPage() {
 
     // 3. Persist to Supabase if column exists
     try {
-      const { error } = await supabase
-        .from("vendors")
-        .update({ is_employee: nextStatus })
-        .eq("id", vendor.id);
-
-      if (error && !error.message?.includes("column")) {
-        console.error("Supabase update error:", error.message);
-      }
-    } catch (e) {
-      console.warn("Could not sync with Supabase column:", e);
+      await updateVendor(vendor.id, { is_employee: nextStatus });
+    } catch (e: any) {
+      console.warn("Could not sync with column:", e.message);
     }
 
     triggerSuccess(
@@ -175,10 +161,6 @@ export default function VendorsPage() {
   // Add Vendor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSupabaseConfigured) {
-      alert("Please connect Supabase first by providing your credentials in .env.local");
-      return;
-    }
     setSaving(true);
     setErrorMessage(null);
 
@@ -197,30 +179,8 @@ export default function VendorsPage() {
       payloadToInsert.salary = Number(formData.salary);
     }
 
-    let insertResult = await supabase
-      .from("vendors")
-      .insert([payloadToInsert])
-      .select();
-
-    // Fallback if Supabase schema doesn't have is_employee/salary column yet
-    if (
-      insertResult.error &&
-      (insertResult.error.message?.includes("is_employee") ||
-        insertResult.error.message?.includes("salary"))
-    ) {
-      const { is_employee, salary, ...fallbackPayload } = payloadToInsert;
-      insertResult = await supabase
-        .from("vendors")
-        .insert([fallbackPayload])
-        .select();
-    }
-
-    if (insertResult.error) {
-      console.error(insertResult.error);
-      setErrorMessage(insertResult.error.message);
-      alert(`Failed to save vendor: ${insertResult.error.message}`);
-    } else if (insertResult.data && insertResult.data[0]) {
-      const newVendor = insertResult.data[0];
+    try {
+      const newVendor = await createVendor(payloadToInsert);
       // Sync local cache
       saveLocalEmployeeCache(newVendor.id, formData.is_employee, formData.salary);
 
@@ -239,6 +199,10 @@ export default function VendorsPage() {
           : `Vendor "${newVendor.receiver_name}" added successfully!`
       );
       fetchVendors();
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message);
+      alert(`Failed to save vendor: ${error.message}`);
     }
     setSaving(false);
   };
@@ -275,35 +239,8 @@ export default function VendorsPage() {
       salary: editFormData.salary ? Number(editFormData.salary) : 0,
     };
 
-    let { error } = await supabase
-      .from("vendors")
-      .update(updatePayload)
-      .eq("id", editingVendor.id);
-
-    // Fallback if column missing in Supabase schema
-    if (
-      error &&
-      (error.message?.includes("is_employee") || error.message?.includes("salary"))
-    ) {
-      const { is_employee, salary, ...fallbackPayload } = updatePayload;
-      const retry = await supabase
-        .from("vendors")
-        .update(fallbackPayload)
-        .eq("id", editingVendor.id);
-      error = retry.error;
-    }
-
-    // Always update local cache
-    saveLocalEmployeeCache(
-      editingVendor.id,
-      editFormData.is_employee,
-      editFormData.salary
-    );
-
-    if (error) {
-      console.error(error);
-      alert(`Failed to update vendor: ${error.message}`);
-    } else {
+    try {
+      await updateVendor(editingVendor.id, updatePayload);
       setVendors((prev) =>
         prev.map((v) =>
           v.id === editingVendor.id
@@ -317,6 +254,9 @@ export default function VendorsPage() {
       );
       triggerSuccess(`Updated "${editFormData.receiver_name}" successfully!`);
       setEditingVendor(null);
+    } catch (error: any) {
+      console.error(error);
+      alert(`Failed to update vendor: ${error.message}`);
     }
     setEditSaving(false);
   };
@@ -329,18 +269,14 @@ export default function VendorsPage() {
     const targetId = deletingVendor.id;
     const targetName = deletingVendor.receiver_name;
 
-    const { error } = await supabase
-      .from("vendors")
-      .delete()
-      .eq("id", targetId);
-
-    if (error) {
-      console.error(error);
-      alert(`Failed to delete vendor: ${error.message}`);
-    } else {
+    try {
+      await deleteVendorAction(targetId);
       setVendors((prev) => prev.filter((v) => v.id !== targetId));
       triggerSuccess(`Deleted vendor "${targetName}".`);
       setDeletingVendor(null);
+    } catch (error: any) {
+      console.error(error);
+      alert(`Failed to delete vendor: ${error.message}`);
     }
     setIsDeleting(false);
   };
@@ -399,17 +335,7 @@ export default function VendorsPage() {
         </div>
       )}
 
-      {!isSupabaseConfigured && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div className="text-xs sm:text-sm">
-            <p className="font-semibold">Supabase is not connected yet</p>
-            <p className="mt-1">
-              Add your credentials to <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">.env.local</code> and restart the dev server.
-            </p>
-          </div>
-        </div>
-      )}
+
 
       {errorMessage && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800 flex items-start gap-3">

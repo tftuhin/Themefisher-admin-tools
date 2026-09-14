@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { updateInvoice } from "@/app/actions";
 import type { Client, Invoice, PaymentAccount } from "@/types";
 import { X, Save } from "lucide-react";
 import SearchableClientSelect from "@/components/SearchableClientSelect";
@@ -133,9 +133,9 @@ function EditInvoiceForm({
     setErrorMsg("");
 
     const updatePayload: Record<string, unknown> = {
-      client_id: clientId,
+      client_id: clientId || undefined,
       invoice_number: cleanInvoiceNumber,
-      invoice_date: invoiceDate,
+      invoice_date: invoiceDate || undefined,
       currency: currency || "USD",
       amount: parsedAmount,
       description: cleanDescription,
@@ -143,39 +143,15 @@ function EditInvoiceForm({
       payment_methods: paymentMethods,
     };
 
-    let { data, error } = await supabase
-      .from("invoices")
-      .update(updatePayload)
-      .eq("id", invoice.id)
-      .select();
-
-    // Fallback if currency column issue
-    if (
-      error &&
-      (error.code === "42703" || error.message?.includes("currency"))
-    ) {
-      delete updatePayload.currency;
-      const fallback = await supabase
-        .from("invoices")
-        .update(updatePayload)
-        .eq("id", invoice.id)
-        .select();
-      data = fallback.data;
-      error = fallback.error;
-    }
-
-    setSaving(false);
-
-    if (error) {
+    try {
+      const updatedItem = await updateInvoice(invoice.id, updatePayload);
+      onSaved(updatedItem as unknown as Invoice);
+      onClose();
+    } catch (error: any) {
       console.error("Failed to update invoice:", error.message);
       setErrorMsg("Unable to update invoice. Please try again.");
-    } else {
-      const updatedItem =
-        data && data[0]
-          ? (data[0] as Invoice)
-          : { ...invoice, ...updatePayload };
-      onSaved(updatedItem);
-      onClose();
+    } finally {
+      setSaving(false);
     }
   };
 

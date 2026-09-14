@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
+import { getClients, createClient as createClientAction, deleteClient as deleteClientAction } from "@/app/actions";
 import { useForm } from "react-hook-form";
 import type { Client, ClientFormData } from "@/types";
 import { EditClientModal } from "@/components/EditClientModal";
@@ -28,14 +28,11 @@ export default function ClientsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchClients = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*")
-      .order("name", { ascending: true });
-    if (error) {
+    try {
+      const data = await getClients();
+      setClients(data);
+    } catch (error: any) {
       console.error("Error fetching clients:", error.message);
-    } else if (data) {
-      setClients(data as Client[]);
     }
     setLoading(false);
   }, []);
@@ -43,17 +40,17 @@ export default function ClientsPage() {
   useEffect(() => {
     let ignore = false;
     async function load() {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order("name", { ascending: true });
-      if (!ignore) {
-        if (error) {
-          console.error("Error fetching clients:", error.message);
-        } else if (data) {
-          setClients(data as Client[]);
+      try {
+        const data = await getClients();
+        if (!ignore) {
+          setClients(data);
+          setLoading(false);
         }
-        setLoading(false);
+      } catch (error: any) {
+        if (!ignore) {
+          console.error("Error fetching clients:", error.message);
+          setLoading(false);
+        }
       }
     }
     void load();
@@ -78,31 +75,15 @@ export default function ClientsPage() {
       bank_address: data.bank_address?.trim() || null,
     };
 
-    let { error } = await supabase.from("clients").insert([payload]);
-
-    // Fallback if 'tax_id' column doesn't exist yet in Supabase
-    if (
-      error &&
-      (error.code === "42703" || error.message?.includes("tax_id"))
-    ) {
-      delete payload.tax_id;
-      const fallbackRes = await supabase.from("clients").insert([payload]);
-      error = fallbackRes.error;
-      if (!error && data.tax_id?.trim()) {
-        alert(
-          "Client added! Note: To permanently store VAT/Tax IDs in Supabase, please run this in your Supabase SQL Editor:\n\nALTER TABLE clients ADD COLUMN IF NOT EXISTS tax_id TEXT;",
-        );
-      }
-    }
-
-    setSubmitting(false);
-
-    if (!error) {
+    try {
+      await createClientAction(payload);
       reset();
       await fetchClients();
-    } else {
+    } catch (error: any) {
       console.error("Error creating client:", error.message);
       alert("Unable to create client. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -122,13 +103,10 @@ export default function ClientsPage() {
   const deleteClient = async (client: Client) => {
     if (!confirm(`Are you sure you want to delete client "${client.name}"?`))
       return;
-    const { error } = await supabase
-      .from("clients")
-      .delete()
-      .eq("id", client.id);
-    if (!error) {
+    try {
+      await deleteClientAction(client.id);
       setClients((prev) => prev.filter((c) => c.id !== client.id));
-    } else {
+    } catch (error: any) {
       console.error("Error deleting client:", error.message);
       alert("Unable to delete client. Please try again.");
     }

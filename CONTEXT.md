@@ -150,9 +150,9 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 ## 9. How to Continue Development
 
 1. Clone the repo and run `npm install`.
-2. Copy `.env.example` to `.env.local` and fill in Supabase credentials + SCB debit account.
+2. Copy `.env.example` to `.env.local` and fill in your NeonDB `DATABASE_URL` + SCB debit account.
 3. Run `npm run dev` to start the dev server.
-4. The Supabase database is shared — no local DB setup needed.
+4. The NeonDB database is shared — no local DB setup needed.
 5. **Read this entire `CONTEXT.md` before making any changes.**
 6. **After every change:** Prepend a log entry (see format below), then commit.
 
@@ -173,6 +173,28 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 ---
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
+
+### 2026-09-14 16:55 — Complete Migration to NeonDB with Drizzle ORM
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/db/index.ts` & `src/db/schema.ts` — **[NEW]** Setup Drizzle ORM schemas mapped from the original Supabase tables.
+- `drizzle.config.ts` — **[NEW]** Added Drizzle config for migrations and studio.
+- `src/app/actions.ts` — **[NEW]** Centralized all database operations using Next.js Server Actions.
+- `src/app/invoice-tools/page.tsx` — Refactored to fetch invoices and clients using Server Actions.
+- `src/app/invoice-tools/clients/page.tsx` — Refactored client CRUD to use Server Actions.
+- `src/app/invoice-tools/settings/page.tsx` — Refactored payment account CRUD to use Server Actions.
+- `src/app/invoice-tools/create-invoice/page.tsx` — Refactored invoice creation and fetching to use Server Actions.
+- `src/app/scb-tools/page.tsx` — Refactored vendor and debit account fetching to use Server Actions.
+- `src/app/scb-tools/vendors/page.tsx` — Refactored vendor CRUD to use Server Actions.
+- `src/app/scb-tools/debit-accounts/page.tsx` — Refactored debit account CRUD to use Server Actions.
+- `src/components/BankBranchSelect.tsx` — Migrated branch fetching and routing number querying to Server Actions.
+- `src/components/EditInvoiceModal.tsx` & `src/components/EditClientModal.tsx` — Updated to call mutation Server Actions.
+- `package.json` — Removed `@supabase/supabase-js`; installed `drizzle-orm`, `drizzle-kit`, and `@neondatabase/serverless`.
+- `src/lib/supabase.ts` — **[DELETED]** Removed Supabase client entirely.
+**Decisions & notes:**
+- Completely removed direct client-side Supabase calls and `@supabase/supabase-js` dependency.
+- All database interactions are now performed strictly on the server-side via Next.js Server Actions using Drizzle ORM and NeonDB serverless HTTP driver.
+- The user is responsible for providing Neon DB connection string as an environment variable in production.
 
 ### 2026-09-14 09:42 — Fix TypeScript Build Error
 **Agent/Dev:** Gemini (Antigravity)

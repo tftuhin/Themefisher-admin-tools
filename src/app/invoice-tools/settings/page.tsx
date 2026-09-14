@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { getPaymentAccounts, createPaymentAccount, deletePaymentAccount } from "@/app/actions";
 import { useForm } from "react-hook-form";
 import type { PaymentAccount, PaymentAccountFormData } from "@/types";
 import {
@@ -57,20 +57,16 @@ export default function SettingsPage() {
   } = useForm<PaymentAccountFormData>();
 
   const fetchAccounts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("payment_accounts")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      if (error.code === "PGRST205") {
+    try {
+      const data = await getPaymentAccounts();
+      setAccounts(data.map(normalizeAccount as any));
+      setDbTableMissing(false);
+    } catch (error: any) {
+      if (error.code === "42P01") {
         setDbTableMissing(true);
       } else {
         console.error("Error fetching accounts:", error.message);
       }
-    } else if (data) {
-      setAccounts(data.map(normalizeAccount));
-      setDbTableMissing(false);
     }
     setLoading(false);
   }, []);
@@ -78,23 +74,22 @@ export default function SettingsPage() {
   useEffect(() => {
     let ignore = false;
     async function load() {
-      const { data, error } = await supabase
-        .from("payment_accounts")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (!ignore) {
-        if (error) {
-          if (error.code === "PGRST205") {
+      try {
+        const data = await getPaymentAccounts();
+        if (!ignore) {
+          setAccounts(data.map(normalizeAccount as any));
+          setDbTableMissing(false);
+          setLoading(false);
+        }
+      } catch (error: any) {
+        if (!ignore) {
+          if (error.code === "42P01") {
             setDbTableMissing(true);
           } else {
             console.error("Error fetching accounts:", error.message);
           }
-        } else if (data) {
-          setAccounts(data.map(normalizeAccount));
-          setDbTableMissing(false);
+          setLoading(false);
         }
-        setLoading(false);
       }
     }
     void load();
@@ -145,43 +140,17 @@ export default function SettingsPage() {
       account_number: cleanAccountNumber,
       account_name: accountName,
       account_details: accountDetails,
-    };
+    } as any;
 
-    let { error } = await supabase.from("payment_accounts").insert([payload]);
-
-    // Fallback if the table exists but doesn't have the new individual columns yet
-    if (
-      error &&
-      (error.code === "PGRST204" ||
-        error.message?.includes("column") ||
-        error.code === "42703")
-    ) {
-      const fallbackPayload = {
-        account_name: accountName,
-        account_details: JSON.stringify({
-          bank_name: cleanBankName,
-          bank_address: cleanBankAddress || "",
-          name_on_account: cleanNameOnAccount,
-          bic_swift: cleanBicSwift || "",
-          account_number: cleanAccountNumber,
-        }),
-      };
-      const fallbackRes = await supabase
-        .from("payment_accounts")
-        .insert([fallbackPayload]);
-      error = fallbackRes.error;
-    }
-
-    setSubmitting(false);
-
-    if (!error) {
+    try {
+      await createPaymentAccount(payload);
       reset();
       await fetchAccounts();
-    } else {
-      if (error.code === "PGRST205") {
+    } catch (error: any) {
+      if (error.code === "42P01") {
         setDbTableMissing(true);
         alert(
-          "The 'payment_accounts' table does not exist in Supabase yet. Please run the SQL schema from 'supabase_schema.sql' in your Supabase SQL editor.",
+          "The 'payment_accounts' table does not exist in the database yet. Please push the schema.",
         );
       } else {
         console.error("Error saving account:", error.message);
@@ -189,18 +158,17 @@ export default function SettingsPage() {
           "Unable to save bank account. Please verify details and try again.",
         );
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const deleteAccount = async (id: string) => {
     if (!confirm("Are you sure you want to delete this bank account?")) return;
-    const { error } = await supabase
-      .from("payment_accounts")
-      .delete()
-      .eq("id", id);
-    if (!error) {
+    try {
+      await deletePaymentAccount(id);
       await fetchAccounts();
-    } else {
+    } catch (error: any) {
       console.error("Error deleting account:", error.message);
       alert("Unable to delete account. Please try again.");
     }

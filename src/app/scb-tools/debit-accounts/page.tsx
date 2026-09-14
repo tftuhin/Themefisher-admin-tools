@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  supabase,
-  isSupabaseConfigured,
-  type DebitAccount,
-} from "@/lib/supabase";
+import { getDebitAccounts, createDebitAccount, updateDebitAccount, deleteDebitAccount as deleteDebitAccountAction, setDefaultDebitAccount as setDefaultDebitAccountAction, unsetAllDefaultDebitAccounts } from "@/app/actions";
+import type { DebitAccount } from "@/types";
 import {
   Plus,
   Loader2,
@@ -59,39 +56,19 @@ export default function DebitAccountsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchAccounts = async () => {
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setErrorMessage(null);
-    setTableNotFound(false);
-
     try {
-      const { data, error } = await supabase
-        .from("debit_accounts")
-        .select("*")
-        .order("is_default", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching debit accounts:", error);
-        if (
-          error.message?.includes("Could not find the table") ||
-          error.code === "42P01"
-        ) {
-          setTableNotFound(true);
-        } else {
-          setErrorMessage(error.message);
-        }
+      const data = await getDebitAccounts();
+      setAccounts(data || []);
+    } catch (err: any) {
+      console.error("Error fetching debit accounts:", err);
+      if (
+        err.message?.includes("Could not find the table") ||
+        err.code === "42P01"
+      ) {
+        setTableNotFound(true);
       } else {
-        setAccounts(data || []);
+        setErrorMessage(err.message || "Failed to load debit accounts");
       }
-    } catch (err: unknown) {
-      console.error(err);
-      const msg =
-        err instanceof Error ? err.message : "Failed to load debit accounts";
-      setErrorMessage(msg);
     }
     setLoading(false);
   };
@@ -110,34 +87,32 @@ export default function DebitAccountsPage() {
   // Add Debit Account
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSupabaseConfigured) {
-      alert("Please connect Supabase first.");
-      return;
-    }
     setSaving(true);
     setErrorMessage(null);
 
     // If new account is marked default, unset others first
     if (formData.is_default && accounts.length > 0) {
-      await supabase
-        .from("debit_accounts")
-        .update({ is_default: false })
-        .neq("id", "00000000-0000-0000-0000-000000000000");
+      await unsetAllDefaultDebitAccounts();
     }
 
-    const { data, error } = await supabase
-      .from("debit_accounts")
-      .insert([
-        {
-          account_number: formData.account_number.trim(),
-          account_label: formData.account_label.trim() || "Debit Account",
-          bank_name: formData.bank_name.trim() || "Standard Chartered Bank",
-          is_default: formData.is_default || accounts.length === 0,
-        },
-      ])
-      .select();
-
-    if (error) {
+    try {
+      await createDebitAccount({
+        account_number: formData.account_number.trim(),
+        account_label: formData.account_label.trim() || "Debit Account",
+        bank_name: formData.bank_name.trim() || "Standard Chartered Bank",
+        is_default: formData.is_default || accounts.length === 0,
+      });
+      // Also cache in localStorage for immediate offline persistence
+      localStorage.setItem("scb_debit_account", formData.account_number.trim());
+      setFormData({
+        account_number: "",
+        account_label: "Main SCB Account",
+        bank_name: "Standard Chartered Bank",
+        is_default: accounts.length === 0,
+      });
+      triggerSuccess("Debit account saved successfully to database!");
+      fetchAccounts();
+    } catch (error: any) {
       console.error(error);
       if (
         error.message?.includes("Could not find the table") ||
@@ -149,17 +124,6 @@ export default function DebitAccountsPage() {
         setErrorMessage(error.message);
         alert(`Failed to save: ${error.message}`);
       }
-    } else if (data) {
-      // Also cache in localStorage for immediate offline persistence
-      localStorage.setItem("scb_debit_account", formData.account_number.trim());
-      setFormData({
-        account_number: "",
-        account_label: "Main SCB Account",
-        bank_name: "Standard Chartered Bank",
-        is_default: accounts.length === 0,
-      });
-      triggerSuccess("Debit account saved successfully to database!");
-      fetchAccounts();
     }
     setSaving(false);
   };
@@ -167,18 +131,7 @@ export default function DebitAccountsPage() {
   // Set as Default
   const handleSetDefault = async (acc: DebitAccount) => {
     try {
-      // Unset all
-      await supabase
-        .from("debit_accounts")
-        .update({ is_default: false })
-        .neq("id", acc.id);
-      // Set chosen
-      const { error } = await supabase
-        .from("debit_accounts")
-        .update({ is_default: true })
-        .eq("id", acc.id);
-      if (error) throw error;
-
+      await setDefaultDebitAccountAction(acc.id);
       localStorage.setItem("scb_debit_account", acc.account_number);
       triggerSuccess(
         `Set "${acc.account_label}" as the default debit account!`,
@@ -209,25 +162,17 @@ export default function DebitAccountsPage() {
     setEditSaving(true);
 
     if (editFormData.is_default) {
-      await supabase
-        .from("debit_accounts")
-        .update({ is_default: false })
-        .neq("id", editingAccount.id);
+      await unsetAllDefaultDebitAccounts();
     }
 
-    const { error } = await supabase
-      .from("debit_accounts")
-      .update({
+    try {
+      await updateDebitAccount(editingAccount.id, {
         account_number: editFormData.account_number.trim(),
         account_label: editFormData.account_label.trim(),
         bank_name: editFormData.bank_name.trim(),
         is_default: editFormData.is_default,
-      })
-      .eq("id", editingAccount.id);
+      });
 
-    if (error) {
-      alert(`Update failed: ${error.message}`);
-    } else {
       if (editFormData.is_default) {
         localStorage.setItem(
           "scb_debit_account",
@@ -237,6 +182,8 @@ export default function DebitAccountsPage() {
       triggerSuccess("Debit account updated successfully!");
       setEditingAccount(null);
       fetchAccounts();
+    } catch (error: any) {
+      alert(`Update failed: ${error.message}`);
     }
     setEditSaving(false);
   };
@@ -246,16 +193,13 @@ export default function DebitAccountsPage() {
     if (!deletingAccount) return;
     setIsDeleting(true);
 
-    const { error } = await supabase
-      .from("debit_accounts")
-      .delete()
-      .eq("id", deletingAccount.id);
-    if (error) {
-      alert(`Delete failed: ${error.message}`);
-    } else {
+    try {
+      await deleteDebitAccountAction(deletingAccount.id);
       triggerSuccess("Debit account removed.");
       setDeletingAccount(null);
       fetchAccounts();
+    } catch (error: any) {
+      alert(`Delete failed: ${error.message}`);
     }
     setIsDeleting(false);
   };

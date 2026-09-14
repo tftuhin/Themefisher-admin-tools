@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
 import Script from "next/script";
-import { supabase } from "@/lib/supabase";
+import { getClients, getPaymentAccounts, getInvoices, createInvoice, deleteInvoice as deleteInvoiceAction } from "@/app/actions";
 import { useForm } from "react-hook-form";
 import type { Client, PaymentAccount, Invoice, InvoiceFormData } from "@/types";
 import { EditInvoiceModal } from "@/components/EditInvoiceModal";
@@ -267,30 +267,19 @@ export default function CreateInvoicePage() {
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const fetchInvoices = async () => {
-    const { data } = await supabase
-      .from("invoices")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setInvoices(data as Invoice[]);
-  };
-
   useEffect(() => {
     let ignore = false;
     async function fetchData() {
-      const [clientsRes, accountsRes, invoicesRes] = await Promise.all([
-        supabase.from("clients").select("*").order("name"),
-        supabase.from("payment_accounts").select("*"),
-        supabase
-          .from("invoices")
-          .select("*")
-          .order("created_at", { ascending: false }),
+      const [clientsList, accountsList, invoicesList] = await Promise.all([
+        getClients(),
+        getPaymentAccounts(),
+        getInvoices(),
       ]);
       if (!ignore) {
-        if (clientsRes.data) setClients(clientsRes.data as Client[]);
-        if (invoicesRes.data) setInvoices(invoicesRes.data as Invoice[]);
-        if (accountsRes.data) {
-          const accs = accountsRes.data as PaymentAccount[];
+        if (clientsList) setClients(clientsList);
+        if (invoicesList) setInvoices(invoicesList);
+        if (accountsList) {
+          const accs = accountsList;
           setAccounts(accs);
           if (accs.length > 0) {
             setSelectedPaymentMethods([accs[0].id]);
@@ -392,24 +381,8 @@ export default function CreateInvoicePage() {
       payment_methods: paymentMethodsArray,
     };
 
-    let { error } = await supabase.from("invoices").insert([payload]).select();
-
-    // Fallback if column 'currency' doesn't exist yet
-    if (
-      error &&
-      (error.code === "42703" || error.message?.includes("currency"))
-    ) {
-      delete payload.currency;
-      const fallbackRes = await supabase
-        .from("invoices")
-        .insert([payload])
-        .select();
-      error = fallbackRes.error;
-    }
-
-    setSubmitting(false);
-
-    if (!error) {
+    try {
+      await createInvoice(payload);
       showAlert("Invoice created successfully!", "success");
       reset();
       setSelectedClientId("");
@@ -423,13 +396,14 @@ export default function CreateInvoicePage() {
       } else {
         setSelectedPaymentMethods([]);
       }
-      await fetchInvoices();
-    } else {
+    } catch (error: any) {
       console.error("Error creating invoice:", error.message);
       showAlert(
         "Unable to save invoice. Please verify invoice details and try again.",
         "error",
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -454,14 +428,13 @@ export default function CreateInvoicePage() {
       return;
     }
 
-    const { error } = await supabase.from("invoices").delete().eq("id", inv.id);
-    if (error) {
+    try {
+      await deleteInvoiceAction(inv.id);
+      setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+    } catch (error: any) {
       console.error("Error deleting invoice:", error.message);
       showAlert("Unable to delete invoice. Please try again.", "error");
-      return;
     }
-
-    setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
   };
 
   // Filtered invoices for table

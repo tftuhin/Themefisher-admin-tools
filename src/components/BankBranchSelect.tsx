@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import CreatableSelect from "react-select/creatable";
-import { supabase } from "@/lib/supabase";
+import { getBankNames, getBranchesByBank, getRoutingNumber } from "@/app/actions";
 
 interface OptionType {
   label: string;
@@ -83,27 +83,13 @@ export default function BankBranchSelect({
     let cancelled = false;
     async function fetchBanks() {
       setLoadingBanks(true);
-      const allBankNames = new Set<string>();
-      let from = 0;
-      const pageSize = 1000;
-
-      // Paginate through all rows since Supabase limits to 1000 per query
-      while (true) {
-        const { data, error } = await supabase
-          .from("bank_branches")
-          .select("bank_name")
-          .order("bank_name")
-          .range(from, from + pageSize - 1);
-
-        if (error || !data || data.length === 0) break;
-        data.forEach((d) => allBankNames.add(d.bank_name));
-        if (data.length < pageSize) break;
-        from += pageSize;
-      }
-
-      if (!cancelled) {
-        const sorted = [...allBankNames].sort();
-        setBankOptions(sorted.map((b) => ({ label: b, value: b })));
+      try {
+        const data = await getBankNames();
+        if (!cancelled && data) {
+          setBankOptions(data.map((b: string) => ({ label: b, value: b })));
+        }
+      } catch (err) {
+        console.error("Error fetching banks:", err);
       }
       setLoadingBanks(false);
     }
@@ -120,18 +106,17 @@ export default function BankBranchSelect({
       return;
     }
     setLoadingBranches(true);
-    const { data, error } = await supabase
-      .from("bank_branches")
-      .select("branch_name, district_name")
-      .eq("bank_name", selectedBank)
-      .order("branch_name");
-
-    if (!error && data) {
-      const options = data.map((d) => ({
-        label: `${d.branch_name} (${d.district_name})`,
-        value: d.branch_name,
-      }));
-      setBranchOptions(options);
+    try {
+      const data = await getBranchesByBank(selectedBank);
+      if (data) {
+        const options = data.map((d: any) => ({
+          label: `${d.branchName} (${d.districtName})`,
+          value: d.branchName,
+        }));
+        setBranchOptions(options);
+      }
+    } catch (err) {
+      console.error("Error fetching branches:", err);
     }
     setLoadingBranches(false);
   }, []);
@@ -159,16 +144,13 @@ export default function BankBranchSelect({
       onBranchChange(val);
 
       if (val && bankName) {
-        const { data } = await supabase
-          .from("bank_branches")
-          .select("routing_number")
-          .eq("bank_name", bankName)
-          .eq("branch_name", val)
-          .limit(1)
-          .single();
-
-        if (data?.routing_number) {
-          onRoutingChange(data.routing_number);
+        try {
+          const routingNum = await getRoutingNumber(bankName, val);
+          if (routingNum) {
+            onRoutingChange(routingNum);
+          }
+        } catch (err) {
+          console.error("Error fetching routing number:", err);
         }
       }
     },

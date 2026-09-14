@@ -9,8 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.116.0",
+    "@neondatabase/serverless": "^1.1.0",
     "date-fns": "^4.4.0",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.43.0",
     "next": "16.3.4",
     "react": "19.2.8",
@@ -25,6 +26,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",

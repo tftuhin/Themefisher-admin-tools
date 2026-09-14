@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { updateClient } from "@/app/actions";
 import type { Client } from "@/types";
 import { X, Save, Building2, MapPin, Landmark, FileText } from "lucide-react";
 
@@ -40,48 +40,21 @@ function EditClientForm({
 
     const updatePayload: Record<string, unknown> = {
       name: name.trim(),
-      address: address.trim(),
-      tax_id: taxId.trim() || null,
-      bank_name: bankName.trim(),
-      bank_address: bankAddress.trim(),
+      address: address.trim() || undefined,
+      tax_id: taxId.trim() || undefined,
+      bank_name: bankName.trim() || undefined,
+      bank_address: bankAddress.trim() || undefined,
     };
 
-    let { data, error } = await supabase
-      .from("clients")
-      .update(updatePayload)
-      .eq("id", client.id)
-      .select();
-
-    // Fallback if 'tax_id' column doesn't exist yet in Supabase
-    if (
-      error &&
-      (error.code === "42703" || error.message?.includes("tax_id"))
-    ) {
-      delete updatePayload.tax_id;
-      const fallback = await supabase
-        .from("clients")
-        .update(updatePayload)
-        .eq("id", client.id)
-        .select();
-      data = fallback.data;
-      error = fallback.error;
-      if (!error && taxId.trim()) {
-        alert(
-          "Client updated! Note: To permanently store VAT/Tax IDs in Supabase, please run this in your Supabase SQL Editor:\n\nALTER TABLE clients ADD COLUMN IF NOT EXISTS tax_id TEXT;",
-        );
-      }
-    }
-
-    setSaving(false);
-
-    if (error) {
+    try {
+      const updatedItem = await updateClient(client.id, updatePayload);
+      onSaved(updatedItem as unknown as Client);
+      onClose();
+    } catch (error: any) {
       console.error("Failed to update client:", error.message);
       setErrorMsg("Unable to update client details. Please try again.");
-    } else {
-      const updatedClient =
-        data && data[0] ? (data[0] as Client) : { ...client, ...updatePayload };
-      onSaved(updatedClient);
-      onClose();
+    } finally {
+      setSaving(false);
     }
   };
 

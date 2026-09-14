@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  supabase,
-  isSupabaseConfigured,
-  type Vendor,
-  type DebitAccount,
-} from "@/lib/supabase";
+import { getVendors, getDebitAccounts } from "@/app/actions";
+import type { Vendor, DebitAccount } from "@/types";
 import SearchableVendorSelect from "@/components/SearchableVendorSelect";
 import {
   Plus,
   Trash2,
   FileSpreadsheet,
-  AlertCircle,
   RotateCcw,
   UserCheck,
   Briefcase,
@@ -78,30 +73,23 @@ export default function GeneratorPage() {
   // Automatically pull debit accounts from Supabase database on load
   useEffect(() => {
     const loadDebitAccount = async () => {
-      if (isSupabaseConfigured) {
-        try {
-          const { data } = await supabase
-            .from("debit_accounts")
-            .select("*")
-            .order("is_default", { ascending: false })
-            .order("created_at", { ascending: false });
-
-          if (data && data.length > 0) {
-            setDebitAccounts(data);
-            const defaultAcc = data.find((a) => a.is_default) || data[0];
-            if (defaultAcc?.account_number) {
-              setDebitAccount(defaultAcc.account_number);
-              setSalaryDebitAccount(defaultAcc.account_number);
-              localStorage.setItem(
-                "scb_debit_account",
-                defaultAcc.account_number
-              );
-              return;
-            }
+      try {
+        const data = await getDebitAccounts();
+        if (data && data.length > 0) {
+          setDebitAccounts(data);
+          const defaultAcc = data.find((a) => a.is_default) || data[0];
+          if (defaultAcc?.account_number) {
+            setDebitAccount(defaultAcc.account_number);
+            setSalaryDebitAccount(defaultAcc.account_number);
+            localStorage.setItem(
+              "scb_debit_account",
+              defaultAcc.account_number
+            );
+            return;
           }
-        } catch (e) {
-          console.error("Error loading debit account from DB:", e);
         }
+      } catch (e) {
+        console.error("Error loading debit account from DB:", e);
       }
 
       // Fallback to localStorage or environment variable
@@ -125,28 +113,31 @@ export default function GeneratorPage() {
   };
 
   const fetchVendors = async () => {
-    if (!isSupabaseConfigured) return;
-    const { data } = await supabase.from("vendors").select("*");
-    if (data) {
-      // Load local employee cache
-      let localCache: Record<string, { is_employee: boolean; salary?: number }> = {};
-      try {
-        const saved = localStorage.getItem("scb_employee_vendors");
-        if (saved) localCache = JSON.parse(saved);
-      } catch {}
+    try {
+      const data = await getVendors();
+      if (data) {
+        // Load local employee cache
+        let localCache: Record<string, { is_employee: boolean; salary?: number }> = {};
+        try {
+          const saved = localStorage.getItem("scb_employee_vendors");
+          if (saved) localCache = JSON.parse(saved);
+        } catch {}
 
-      const merged: Vendor[] = data.map((v: Vendor) => {
-        const local = localCache[v.id];
-        return {
-          ...v,
-          is_employee:
-            v.is_employee !== undefined
-              ? Boolean(v.is_employee)
-              : Boolean(local?.is_employee),
-          salary: v.salary !== undefined ? v.salary : (local?.salary ?? ""),
-        };
-      });
-      setVendors(merged);
+        const merged: Vendor[] = data.map((v: Vendor) => {
+          const local = localCache[v.id];
+          return {
+            ...v,
+            is_employee:
+              v.is_employee !== undefined
+                ? Boolean(v.is_employee)
+                : Boolean(local?.is_employee),
+            salary: v.salary !== undefined ? v.salary : (local?.salary ?? ""),
+          };
+        });
+        setVendors(merged);
+      }
+    } catch (e) {
+      console.error("Error fetching vendors:", e);
     }
   };
 
@@ -565,29 +556,7 @@ export default function GeneratorPage() {
         </div>
       </div>
 
-      {!isSupabaseConfigured && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs sm:text-sm">
-              <p className="font-semibold">Supabase connection required</p>
-              <p className="mt-1">
-                Configure your Supabase credentials in{" "}
-                <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">
-                  .env.local
-                </code>{" "}
-                to pull saved beneficiary accounts.
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/scb-tools/vendors"
-            className="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-xl whitespace-nowrap self-start sm:self-auto"
-          >
-            Manage Receivers
-          </Link>
-        </div>
-      )}
+
 
       {/* Main Generator Grid */}
       <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-4 sm:p-6">

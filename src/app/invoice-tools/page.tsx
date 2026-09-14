@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, Suspense } from "react";
-import { supabase } from "@/lib/supabase";
+import { getClients, getInvoices, getPaymentAccounts } from "@/app/actions";
 import { useReactToPrint } from "react-to-print";
 import { CForm } from "@/components/CForm";
 import { BankInvoice } from "@/components/BankInvoice";
@@ -27,20 +27,15 @@ function GenerateDocsContent() {
   useEffect(() => {
     let ignore = false;
     async function fetchData() {
-      const [cRes, iRes, pRes] = await Promise.all([
-        supabase.from("clients").select("*").order("name"),
-        supabase
-          .from("invoices")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase.from("payment_accounts").select("*"),
+      const [clientList, invoiceList, pRes] = await Promise.all([
+        getClients(),
+        getInvoices(),
+        getPaymentAccounts(),
       ]);
       if (!ignore) {
-        const clientList = (cRes.data as Client[]) || [];
-        const invoiceList = (iRes.data as Invoice[]) || [];
         setClients(clientList);
         setInvoices(invoiceList);
-        if (pRes.data) setPaymentAccounts(pRes.data as PaymentAccount[]);
+        if (pRes) setPaymentAccounts(pRes);
 
         if (queryInvoiceId) {
           const matchedInv = invoiceList.find((i) => i.id === queryInvoiceId);

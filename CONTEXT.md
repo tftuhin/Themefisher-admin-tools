@@ -173,6 +173,14 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 ---
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
+### 2026-09-15 16:36 — Fix Remaining Native Confirm Modal
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/create-invoice/CreateInvoiceClient.tsx` — **[MODIFY]** Replaced the final remaining native `window.confirm()` call in the invoice deletion handler with the unified `ConfirmDeleteModal` component.
+**Decisions & notes:**
+- Ensured 100% UI consistency across all destructive actions in the app. The invoice creator table now uses the same sleek deletion modal as the client and vendor tables.
+
+
 ### 2026-09-15 16:31 — Fix False Positive Client Matching
 **Agent/Dev:** Gemini (Antigravity)
 **Files changed:**

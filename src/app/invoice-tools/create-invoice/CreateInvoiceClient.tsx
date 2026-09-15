@@ -6,6 +6,7 @@ import { parseMT103 } from "@/lib/pdfParser";
 import { useForm } from "react-hook-form";
 import type { Client, PaymentAccount, Invoice, InvoiceFormData } from "@/types";
 import { EditInvoiceModal } from "@/components/EditInvoiceModal";
+import { ConfirmDeleteModal } from "@/components/ConfirmDeleteModal";
 import {
   Search,
   Edit2,
@@ -72,6 +73,9 @@ export default function CreateInvoiceClient({
   // PDF Upload state
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -298,18 +302,21 @@ export default function CreateInvoiceClient({
 
   // Delete action
   const handleDeleteInvoice = async (inv: Invoice) => {
-    if (
-      !confirm(`Are you sure you want to delete invoice ${inv.invoice_number}?`)
-    ) {
-      return;
-    }
+    setDeletingInvoice(inv);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deletingInvoice) return;
+    setIsDeleting(true);
     try {
-      await deleteInvoiceAction(inv.id);
-      setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+      await deleteInvoiceAction(deletingInvoice.id);
+      setInvoices((prev) => prev.filter((i) => i.id !== deletingInvoice.id));
+      setDeletingInvoice(null);
     } catch (error: any) {
       console.error("Error deleting invoice:", error.message);
       showAlert("Unable to delete invoice. Please try again.", "error");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -762,6 +769,17 @@ export default function CreateInvoiceClient({
         onSaved={handleInvoiceSaved}
         clients={clients}
         accounts={accounts}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingInvoice}
+        onClose={() => setDeletingInvoice(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Invoice?"
+        description="Are you sure you want to permanently delete this invoice? This action cannot be undone."
+        itemName={deletingInvoice?.invoice_number}
+        isDeleting={isDeleting}
       />
 
       {alertData && (

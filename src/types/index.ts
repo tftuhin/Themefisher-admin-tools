@@ -74,6 +74,7 @@ export interface Vendor {
   branch_name: string;
   routing_number: string;
   is_employee?: boolean;
+  is_hidden?: boolean | null;
   salary?: number | string;
   created_at?: string;
 }

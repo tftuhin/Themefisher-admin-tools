@@ -1,5 +1,9 @@
 "use server";
 
+import { generateObject } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { z } from "zod";
+
 import { db } from "@/db";
 import { eq, desc, asc, and } from "drizzle-orm";
 import {
@@ -175,4 +179,75 @@ export async function getRoutingNumber(bankName: string, branchName: string) {
     .where(and(eq(bankBranches.bank_name, bankName), eq(bankBranches.branch_name, branchName)))
     .limit(1);
   return data[0]?.routingNumber;
+}
+
+export async function lookupSwiftCode(swiftCode: string) {
+  try {
+    if (!swiftCode || swiftCode.length < 8) return null;
+    const countryCode = swiftCode.substring(4, 6).toUpperCase();
+    
+    const response = await fetch(`https://raw.githubusercontent.com/PeterNotenboom/SwiftCodes/master/AllCountries/${countryCode}.json`);
+    if (!response.ok) {
+      return null;
+    }
+    
+    const data = await response.json();
+    const list = Array.isArray(data) ? data : data.list;
+    if (!list || !Array.isArray(list)) return null;
+
+    let matched = list.find((b: any) => b.swift_code === swiftCode);
+    if (!matched) {
+      matched = list.find((b: any) => b.swift_code.startsWith(swiftCode) || swiftCode.startsWith(b.swift_code));
+    }
+
+    if (matched) {
+      return {
+        bank_name: matched.bank,
+        branch: matched.branch,
+        city: matched.city,
+        country: countryCode,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Failed to lookup SWIFT code:", error);
+    return null;
+  }
+}
+
+export async function extractInvoiceDataFromText(text: string, existingClientNames?: string[]) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set in environment variables. Please add it to .env.local to use PDF parsing.");
+  }
+
+  const google = createGoogleGenerativeAI({ apiKey });
+
+  const clientListHint = existingClientNames && existingClientNames.length > 0
+    ? `\n\nIMPORTANT - Here is the list of known client names from our database:\n${existingClientNames.map(n => `- ${n}`).join("\n")}\n\nFor client_name: First check the "Ordering Customer" column in the transfer table. Then check if ANY of the known client names above appear ANYWHERE in the document text (even partially). If a known client name matches, return that exact database name. If no known client matches, return the raw ordering customer name from the document.`
+    : "";
+
+  const result = await generateObject({
+    model: google("gemini-3.6-flash"),
+    schema: z.object({
+      currency: z.string().describe("3-letter currency code e.g. USD, EUR, GBP, BDT"),
+      amount: z.string().describe("Transfer amount as numeric string without commas e.g. 1000.50"),
+      value_date: z.string().describe("Value date in YYYY-MM-DD format"),
+      invoice_number: z.string().describe("The actual invoice/reference ID from the Details column. Extract ONLY the identifier, NOT the word Invoice or any label"),
+      client_name: z.string().describe("The ordering customer / sender company or person name"),
+    }),
+    prompt: `You are parsing an MT103 bank transfer PDF document. Extract structured data from it.
+
+Rules:
+- currency: The 3-letter currency code
+- amount: Numeric string without commas
+- value_date: In YYYY-MM-DD format
+- invoice_number: The actual reference/invoice ID from the "Details" column only — NOT the word "Invoice"
+- client_name: The name from the "Ordering Customer" column. Return ONLY the company/person name, no account numbers or addresses.${clientListHint}
+
+Document text:
+${text}`,
+  });
+
+  return result.object;
 }

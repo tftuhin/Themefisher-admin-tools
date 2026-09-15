@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { updateInvoice } from "@/app/actions";
 import type { Client, Invoice, PaymentAccount } from "@/types";
-import { X, Save } from "lucide-react";
+import { Save, FileText, X } from "lucide-react";
+import { Modal } from "./Modal";
 import SearchableClientSelect from "@/components/SearchableClientSelect";
 
 interface EditInvoiceModalProps {
@@ -344,18 +345,18 @@ function EditInvoiceForm({
         </div>
 
         {/* Footer Buttons */}
-        <div className="pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+        <div className="pt-2 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer text-center"
+            className="px-5 py-2.5 text-gray-600 bg-white border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 flex items-center gap-2 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? "Saving..." : "Save Changes"}</span>
@@ -377,7 +378,14 @@ export function EditInvoiceModal({
   if (!isOpen || !invoice) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Invoice"
+      subtitle={invoice.invoice_number}
+      icon={<FileText className="w-5 h-5 text-blue-600" />}
+      maxWidth="3xl"
+    >
       <EditInvoiceForm
         key={invoice.id}
         invoice={invoice}
@@ -386,6 +394,6 @@ export function EditInvoiceModal({
         clients={clients}
         accounts={accounts}
       />
-    </div>
+    </Modal>
   );
 }

@@ -63,6 +63,7 @@ export const vendors = pgTable(
     branch_name: text("branch_name").notNull(),
     routing_number: text("routing_number").notNull(),
     is_employee: boolean("is_employee").default(false),
+    is_hidden: boolean("is_hidden").default(false),
     salary: numeric("salary").default("0"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },

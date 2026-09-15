@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { updateClient } from "@/app/actions";
 import type { Client } from "@/types";
-import { X, Save, Building2, MapPin, Landmark, FileText } from "lucide-react";
-
+import { Save, Building2, MapPin, Landmark, FileText } from "lucide-react";
+import { Modal } from "./Modal";
 interface EditClientModalProps {
   client: Client | null;
   isOpen: boolean;
@@ -59,43 +59,16 @@ function EditClientForm({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full flex flex-col border border-gray-200 overflow-hidden my-auto max-h-[90vh]">
-      {/* Header */}
-      <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/70 shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-            <Building2 className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900">
-              Edit Client
-            </h2>
-            <p className="text-xs text-gray-500 truncate max-w-[200px] sm:max-w-[280px]">
-              {client.name}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
+    <div className="w-full flex flex-col h-full">
       {/* Error Alert */}
       {errorMsg && (
-        <div className="mx-5 sm:mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg shrink-0">
+        <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg shrink-0">
           {errorMsg}
         </div>
       )}
 
       {/* Form Body */}
-      <form
-        onSubmit={handleSave}
-        className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1"
-      >
+      <form onSubmit={handleSave} className="p-6 space-y-6 overflow-y-auto max-h-[75vh]">
         <div>
           <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5 text-gray-400" />
@@ -214,13 +187,20 @@ export function EditClientModal({
   if (!isOpen || !client) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Client"
+      subtitle={client.name}
+      icon={<Building2 className="w-5 h-5 text-blue-600" />}
+      maxWidth="lg"
+    >
       <EditClientForm
         key={client.id}
         client={client}
         onClose={onClose}
         onSaved={onSaved}
       />
-    </div>
+    </Modal>
   );
 }

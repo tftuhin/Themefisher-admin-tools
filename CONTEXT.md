@@ -173,6 +173,175 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 ---
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
+### 2026-09-15 16:15 — Switch to Fast Deterministic Spatial PDF Parser
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/lib/pdfParser.ts` — **[NEW]** Added a deterministic spatial column parser for MT103 PDFs using `pdf.js` coordinates.
+- `src/app/invoice-tools/create-invoice/CreateInvoiceClient.tsx` — **[MODIFY]** Replaced slow LLM-based `extractInvoiceDataFromText` with the new local `parseMT103` utility.
+- `src/app/invoice-tools/InvoiceToolsClient.tsx` — **[MODIFY]** Replaced LLM parsing with `parseMT103`.
+**Decisions & notes:**
+- The LLM extraction was taking too long (3-10s latency) and sometimes failing to accurately return the exact client name when it was surrounded by random account numbers (like `123456789876543efgh`).
+- Built a new `pdfParser.ts` that uses the X/Y coordinates from `pdfjsLib`'s `getTextContent()` to precisely extract text from the "Ordering Customer" column and group it.
+- Because it groups all text found under the column and passes it to the existing substring matcher, it successfully resolves names like `tuhintestclient` even when they are buried between account strings.
+- This change completely eliminates network requests for parsing, making it practically instantaneous.
+
+
+### 2026-09-15 14:42 — Switch to Vercel AI SDK + Client Name Matching Fix
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/actions.ts` — Replaced `@google/genai` with Vercel AI SDK (`ai` + `@ai-sdk/google`). Now uses `generateObject()` with Zod schema for faster structured output. Added `existingClientNames` parameter so the LLM can match against the database.
+- `src/app/invoice-tools/InvoiceToolsClient.tsx` — Passes `clients.map(c => c.name)` to the extraction call
+- `src/app/invoice-tools/create-invoice/CreateInvoiceClient.tsx` — Same change
+- `package.json` — Added `ai`, `@ai-sdk/google`, `zod`
+**Decisions & notes:**
+- The LLM was returning the wrong client name because it had no knowledge of the database. Now the full list of known client names is sent alongside the document, so the LLM can directly match.
+- Switched from `@google/genai` to Vercel AI SDK for better performance and simpler API.
+
+### 2026-09-15 13:56 — LLM-Powered PDF Data Extraction (Gemini 2.5 Flash)
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/actions.ts` — Added `extractInvoiceDataFromText()` server action using `@google/genai` SDK with structured JSON output schema
+- `src/app/invoice-tools/create-invoice/CreateInvoiceClient.tsx` — Replaced coordinate-based PDF parsing with simple text extraction + LLM call
+- `src/app/invoice-tools/InvoiceToolsClient.tsx` — Same replacement for the Generate Docs page PDF upload
+- `.env.local` — Added `GEMINI_API_KEY`
+- `package.json` — Added `@google/genai` dependency
+**Decisions & notes:**
+- The old approach used pixel coordinates to guess which text belonged to which column. This was extremely brittle and caused issues like grabbing the word "Invoice" instead of the actual invoice number.
+- The new approach extracts all text from the PDF using pdf.js, sends it to Gemini 2.5 Flash with a strict JSON response schema, and uses the structured output to fill in currency, amount, value_date, invoice_number, and client_name.
+- The LLM call runs server-side via a server action, so the API key is never exposed to the client.
+- Client matching logic is preserved: the LLM-extracted client_name is matched against the database using the same normalized string comparison.
+
+
+### 2026-09-15 13:37 — Performance: App-Wide Server Components Refactor
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/clients/page.tsx` -> split to `page.tsx` & `ClientsClient.tsx`
+- `src/app/invoice-tools/settings/page.tsx` -> split to `page.tsx` & `SettingsClient.tsx`
+- `src/app/invoice-tools/create-invoice/page.tsx` -> split to `page.tsx` & `CreateInvoiceClient.tsx`
+- `src/app/invoice-tools/page.tsx` -> split to `page.tsx` & `InvoiceToolsClient.tsx`
+- `src/app/scb-tools/vendors/page.tsx` -> split to `page.tsx` & `VendorsClient.tsx`
+- `src/app/scb-tools/debit-accounts/page.tsx` -> split to `page.tsx` & `DebitAccountsClient.tsx`
+- `src/app/scb-tools/page.tsx` -> split to `page.tsx` & `ScbToolsClient.tsx`
+**Decisions & notes:**
+- Converted the entire app from client-side data fetching (via `useEffect`) to Server Components.
+- The new `page.tsx` files fetch database resources using `await Promise.all(...)` and pass them as `initialProps` to the respective `*Client.tsx` components.
+- This eliminates the network waterfall on mount, preventing the "skeleton screen / loading spinner" delay, resolving the issue where data was taking too long to be printed to the screen from the database.
+- Fixed TS unused variable errors after removing `useEffect` and hook imports. Verified with `npm run build`.
+
+
+### 2026-09-15 13:20 — Feature: Option to Hide Vendors Instead of Deleting
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/components/ConfirmDeleteModal.tsx` — **[MODIFY]** Added optional `onHide` and `isHiding` props to support a third "Hide Instead" button alongside Cancel and Delete. Adjusted layout to be vertical/horizontal responsive if the hide button is active.
+- `src/app/scb-tools/vendors/page.tsx` — **[MODIFY]** Implemented `handleHideVendor` logic that calls `updateVendor({ is_hidden: true })` instead of permanently deleting. Passed the new hide option into the ConfirmDeleteModal, which allows users to safely archive a receiver account rather than destroying it.
+**Decisions & notes:**
+- The `vendors` table already had an `is_hidden` schema column and the vendors page already successfully filters out hidden items via tabs, so all we needed was to expose this option during the deletion workflow.
+
+
+### 2026-09-15 13:13 — Feature: Unified Delete Confirmation Modals
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/components/ConfirmDeleteModal.tsx` — **[NEW]** Created a standardized, reusable delete confirmation component that wraps the global `Modal`.
+- `src/app/invoice-tools/clients/page.tsx` — **[MODIFY]** Replaced native `confirm()` with `ConfirmDeleteModal`.
+- `src/app/invoice-tools/settings/page.tsx` — **[MODIFY]** Replaced native `confirm()` with `ConfirmDeleteModal`.
+- `src/app/invoice-tools/create-invoice/page.tsx` — **[MODIFY]** Replaced native `confirm()` with `ConfirmDeleteModal`.
+- `src/app/scb-tools/page.tsx` — **[MODIFY]** Replaced native `confirm()` for "Reset Entries" with `ConfirmDeleteModal`.
+- `src/app/scb-tools/debit-accounts/page.tsx` — **[MODIFY]** Replaced bespoke custom deletion modal with the new standardized `ConfirmDeleteModal`.
+- `src/app/scb-tools/vendors/page.tsx` — **[MODIFY]** Replaced bespoke custom deletion modal with the new standardized `ConfirmDeleteModal`.
+**Decisions & notes:**
+- Synchronized all destructive actions across the entire application to use the same sleek UI pattern as the rest of the popups, completely removing any reliance on the browser's native `window.confirm()`.
+
+
+### 2026-09-15 13:04 — Feature: Spatial Column Extraction for Client Matching
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Implemented spatial (X/Y coordinate) column extraction to parse the underlying PDF table structure.
+**Decisions & notes:**
+- Replaced the string-search fallback matching with structural column extraction. The system now searches for the "Ordering Customer" header, calculates the bounding box of the column using its `x` coordinate and the `x` coordinate of the subsequent column ("Details"), and iterates through the rows below to extract the exact customer name text.
+- This extracted client name perfectly resolves partial matches and false positives. If the extracted name matches a database entry, it auto-selects it. If no match is found, it pre-fills the extracted name directly into the "Create Client" modal.
+
+
+### 2026-09-15 12:57 — Bug Fix: Invoice Auto-Select & False Positive Matching
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/components/CreateInvoiceModal.tsx` — **[MODIFY]** Updated `onSuccess` callback to pass the created `invoiceId` so the page can automatically redirect to and select the newly created invoice and C-Form.
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Updated the page redirection logic to append `?invoiceId=[ID]`. Sorted the `clients` array by name length in descending order before matching to prevent generic names (e.g. `Theme Fisher`, which appears at the top of the PDF as the payee) from causing false positive matches over specific clients like `tuhintestclient`.
+
+
+### 2026-09-15 12:47 — Bug Fix: SWIFT Extraction Auto-Fill
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Updated SWIFT code extraction logic to use `matchAll` and verify against the API.
+**Decisions & notes:**
+- Previously, the regex `([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)` incorrectly extracted words like `THEMEFISHER` as the SWIFT code since it happens to perfectly match the 11-character BIC format (`THEM` + `EF` + `IS` + `HER`). 
+- This caused the SWIFT code lookup to silently fail against the API, leading to an empty `bankData` object. When the "Create Client" form opened, it was completely blank. 
+- It now extracts all potential SWIFT codes and iterates over them, polling the API to find the genuine SWIFT code (`SCBLUS33XXX`), successfully auto-filling the bank data.
+
+
+### 2026-09-15 12:41 — Bug Fix: Space-Agnostic Client Matching
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Added "normalized" fallback matching logic that completely strips all spaces and punctuation from both the PDF text and the client name before matching.
+**Decisions & notes:**
+- Certain bank PDFs generated the client string without spaces (e.g. `tuhintestclient`), which failed to match the database name if it was stored with spaces (e.g. `Tuhin Test Client`), or vice-versa. The matching logic is now incredibly robust against formatting anomalies.
+
+
+### 2026-09-15 12:37 — Bug Fix: Robust Client PDF Matching
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Updated `processPDF` to use `fullTextBlob` for client name matching and SWIFT code matching.
+**Decisions & notes:**
+- The previous client matching logic only searched 5 lines of text following the "header row" in the PDF (`clientText`). Because bank PDFs vary greatly, if the client name or SWIFT code appeared elsewhere, it would fail to match an existing client and incorrectly prompt the "Client not found" modal. It now matches the client against the entire text contents of the PDF.
+
+
+### 2026-09-15 12:15 — UI Synchronization: Unified Modal Component
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/components/Modal.tsx` — **[NEW]** Created a centralized, highly polished modal wrapper.
+- `src/components/CreateClientModal.tsx` — **[MODIFY]** Refactored to use the new `Modal` component.
+- `src/components/CreateInvoiceModal.tsx` — **[MODIFY]** Refactored to use the new `Modal` component.
+- `src/components/EditClientModal.tsx` — **[MODIFY]** Refactored to use the new `Modal` component.
+- `src/components/EditInvoiceModal.tsx` — **[MODIFY]** Refactored to use the new `Modal` component.
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Refactored inline match popup to use `Modal`.
+- `src/app/scb-tools/page.tsx` — **[MODIFY]** Refactored inline generator popup to use `Modal`.
+- `src/app/scb-tools/vendors/page.tsx` — **[MODIFY]** Refactored 3 inline popups to use `Modal`.
+- `src/app/scb-tools/debit-accounts/page.tsx` — **[MODIFY]** Refactored 2 inline popups to use `Modal`.
+- `src/app/invoice-tools/create-invoice/page.tsx` — **[MODIFY]** Refactored alert popup to use `Modal`.
+**Decisions & notes:**
+- Extracted the premium styling from `CreateClientModal` into a reusable wrapper to ensure 100% UI consistency across 10+ different popups in the application.
+
+
+### 2026-09-15 12:00 — Switch SWIFT Code API to Open Source Dataset
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/actions.ts` — **[MODIFY]** Rewrote `lookupSwiftCode` to fetch from the PeterNotenboom/SwiftCodes open-source dataset on GitHub instead of API-Ninjas, because API-Ninjas hides `bank_name` and `city` behind a paywall on their free tier.
+**Decisions & notes:**
+- The new approach is completely free, requires no API key in `.env.local`, and provides full bank details without premium masking.
+
+
+### 2026-09-15 11:51 — Add SWIFT Code Parsing and Client Creation Chain
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/actions.ts` — **[MODIFY]** Added `lookupSwiftCode` which hits the API-Ninjas SWIFT API.
+- `src/components/CreateClientModal.tsx` — **[NEW]** Modal for creating a new client, mirroring the UI of CreateInvoiceModal.
+- `src/app/invoice-tools/page.tsx` — **[MODIFY]** Updated PDF parser to regex-extract SWIFT Codes from the "Received From" field. When a completely unknown client uploads a PDF, the app now chains the new `CreateClientModal` (pre-filled with Bank data resolved from the SWIFT API) straight into the `CreateInvoiceModal`.
+**Decisions & notes:**
+- **IMPORTANT**: API-Ninjas SWIFT API requires an API key. You must configure `NEXT_PUBLIC_API_NINJAS_KEY` in `.env.local` or Vercel.
+- Form chaining implemented: on successful client creation, `client_id` is passed seamlessly to the Invoice creator.
+
+
+### 2026-09-15 11:05 — Add Vendor Hide & Invoice Auto-Fill from PDF
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/scb-tools/vendors/page.tsx` — Added UI logic to "Hide" vendors instead of deleting, duplicate detection modal (suggesting old hidden account activation vs new duplicate creation), and updated Tabs/Filters.
+- `src/app/invoice-tools/page.tsx` — Added PDF upload logic (matches `create-invoice/page.tsx`), auto-selects if matching invoice found, or triggers `CreateInvoiceModal`.
+- `src/components/CreateInvoiceModal.tsx` — **[NEW]** Pre-filled invoice creation modal, triggered when a PDF mismatch occurs on the Invoice Tools generator page.
+- `src/app/scb-tools/debit-accounts/page.tsx` & `src/app/invoice-tools/settings/page.tsx` — Fixed lint errors and removed old Supabase missing table check code.
+- `src/components/InvoiceSidebar.tsx` — Swapped the order of the "Generate Inward Docs" and "Create Invoice" tabs.
+- `src/app/invoice-tools/page.tsx` — Replaced native browser `alert()` with a true centered modal popup when a matching invoice is auto-selected from a PDF.
+**Decisions & notes:**
+- Extracted and modified `handleFileUpload` logic into `invoice-tools/page.tsx` allowing fast document extraction on the main page.
+
 
 ### 2026-09-14 16:55 — Complete Migration to NeonDB with Drizzle ORM
 **Agent/Dev:** Gemini (Antigravity)

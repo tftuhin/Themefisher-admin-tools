@@ -30,6 +30,7 @@ export default function SearchableVendorSelect({
   const selectedVendor = vendors.find((v) => v.id === value) || null;
 
   const filteredVendors = vendors.filter((v) => {
+    if (v.is_hidden) return false;
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (

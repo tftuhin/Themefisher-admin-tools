@@ -107,11 +107,11 @@ export default function InvoiceToolsClient({
       let matchedClient: Client | null = null;
       const sortedClients = [...clients].sort((a, b) => b.name.length - a.name.length);
 
-      if (extractedClientName) {
+      if (extractedClientName && extractedClientName.trim().length >= 3) {
         const normExtracted = extractedClientName.replace(/[^a-z0-9]/g, "").toLowerCase();
         for (const c of sortedClients) {
           const normDb = c.name.replace(/[^a-z0-9]/g, "").toLowerCase();
-          if (normExtracted === normDb || normExtracted.includes(normDb) || normDb.includes(normExtracted)) {
+          if (normDb.length >= 3 && (normExtracted === normDb || normExtracted.includes(normDb) || normDb.includes(normExtracted))) {
             matchedClient = c;
             break;
           }
@@ -121,18 +121,8 @@ export default function InvoiceToolsClient({
       if (!matchedClient) {
         const normalizedFullText = completeTextBlob.toLowerCase().replace(/[^a-z0-9]/g, "");
         for (const c of sortedClients) {
-          const dbName = c.name.toLowerCase();
-          if (completeTextBlob.toLowerCase().includes(dbName)) {
-            matchedClient = c;
-            break;
-          }
-          const normalizedDbName = dbName.replace(/[^a-z0-9]/g, "");
-          if (normalizedDbName.length >= 4 && normalizedFullText.includes(normalizedDbName)) {
-            matchedClient = c;
-            break;
-          }
-          const words = dbName.split(/[\s\,]+/).filter((w) => w.length > 3);
-          if (words.length > 0 && completeTextBlob.toLowerCase().includes(words[0])) {
+          const normDb = c.name.replace(/[^a-z0-9]/g, "").toLowerCase();
+          if (normDb.length >= 4 && normalizedFullText.includes(normDb)) {
             matchedClient = c;
             break;
           }

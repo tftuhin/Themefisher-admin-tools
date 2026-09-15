@@ -121,18 +121,13 @@ export default function CreateInvoiceClient({
           }
         }
         
-        if (parsedData.client_name) {
+        if (parsedData.client_name && parsedData.client_name.trim().length >= 3) {
           let matchedClient = null;
-          const cText = parsedData.client_name.toLowerCase();
+          const cText = parsedData.client_name.toLowerCase().trim();
           
           for (const c of clients) {
             const dbName = c.name.toLowerCase();
             if (cText.includes(dbName) || dbName.includes(cText)) {
-              matchedClient = c;
-              break;
-            }
-            const words = dbName.split(/[\s\,]+/).filter((w: string) => w.length > 3);
-            if (words.length > 0 && cText.includes(words[0])) {
               matchedClient = c;
               break;
             }

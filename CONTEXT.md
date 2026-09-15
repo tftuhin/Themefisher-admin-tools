@@ -173,6 +173,17 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 ---
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
+### 2026-09-15 16:31 — Fix False Positive Client Matching
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/invoice-tools/create-invoice/CreateInvoiceClient.tsx` — **[MODIFY]** Fixed client matching bug where an empty extracted string or single space would falsely match clients.
+- `src/app/invoice-tools/InvoiceToolsClient.tsx` — **[MODIFY]** Removed brittle `words[0]` fallback logic that falsely matched clients if their first name (e.g. "Grand") appeared anywhere in the PDF text blob.
+- `src/lib/pdfParser.ts` — **[MODIFY]** Improved spatial header detection to account for fractured word blocks in `pdf.js`.
+**Decisions & notes:**
+- The spatial parser and client matcher occasionally returned false positives (like selecting "GRAND HOTEL KURHAUS AROLLA SA") due to a bug in the fallback matching logic where `dbName.includes("")` evaluates to true, or where the first word of a long client name arbitrarily matched an unrelated string in the PDF.
+- The matching logic is now highly strict: it strips punctuation/spaces, normalizes to lowercase, and requires a substring match of at least 3 characters.
+
+
 ### 2026-09-15 16:15 — Switch to Fast Deterministic Spatial PDF Parser
 **Agent/Dev:** Gemini (Antigravity)
 **Files changed:**

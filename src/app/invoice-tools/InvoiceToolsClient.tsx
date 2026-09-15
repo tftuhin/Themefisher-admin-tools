@@ -66,10 +66,7 @@ export default function InvoiceToolsClient({
           "//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
       }
 
-      const arrayBuffer = await file.arrayBuffer();
-      const data = new Uint8Array(arrayBuffer);
-      const loadingTask = pdfjsLib.getDocument({ data, password: "T137101" });
-      const pdfDocument = await loadingTask.promise;
+      // Removed unused pdfDocument loading
       const parsedData = await parseMT103(file);
       if (!parsedData) {
         triggerError("Could not extract any text from the PDF.");

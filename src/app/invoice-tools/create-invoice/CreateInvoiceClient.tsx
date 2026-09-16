@@ -119,7 +119,9 @@ export default function CreateInvoiceClient({
         if (parsedData.client_name && parsedData.client_name.trim().length >= 3) {
           let matchedClient = null;
           const cText = parsedData.client_name.toLowerCase().trim();
-          
+          const NOISE_WORDS = new Set(["ltd", "llc", "inc", "co", "pvt", "private", "limited", "the", "of", "and"]);
+
+          // Pass 1: direct substring match
           for (const c of clients) {
             const dbName = c.name.toLowerCase();
             if (cText.includes(dbName) || dbName.includes(cText)) {
@@ -127,6 +129,22 @@ export default function CreateInvoiceClient({
               break;
             }
           }
+
+          // Pass 2: word-level partial match (>=60% of significant words)
+          if (!matchedClient) {
+            let bestScore = 0;
+            for (const c of clients) {
+              const dbWords = c.name.toLowerCase().split(/\s+/).filter((w: string) => w.length >= 2 && !NOISE_WORDS.has(w));
+              if (dbWords.length === 0) continue;
+              const matched = dbWords.filter((w: string) => cText.includes(w)).length;
+              const score = matched / dbWords.length;
+              if (score >= 0.6 && score > bestScore) {
+                bestScore = score;
+                matchedClient = c;
+              }
+            }
+          }
+
           if (matchedClient) {
             setSelectedClientId(matchedClient.id);
             setValue("client_id", matchedClient.id);
@@ -311,7 +329,7 @@ export default function CreateInvoiceClient({
     }
   };
 
-  // Filtered invoices for table
+  // Filtered invoices for table — sorted newest first
   const tableInvoices = useMemo(() => {
     return invoices.filter((inv) => {
       if (tableClientFilter && inv.client_id !== tableClientFilter) {
@@ -327,6 +345,10 @@ export default function CreateInvoiceClient({
         return matchNum || matchDesc || matchClient || matchDate;
       }
       return true;
+    }).sort((a, b) => {
+      const dateA = a.invoice_date || "";
+      const dateB = b.invoice_date || "";
+      return dateB.localeCompare(dateA);
     });
   }, [invoices, tableClientFilter, searchTerm, clients]);
 

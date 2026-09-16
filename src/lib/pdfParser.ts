@@ -68,6 +68,7 @@ export async function parseMT103(file: File) {
   let invoice_number = "";
   let swift_code = "";
   const orderingCustomerLines: string[] = [];
+  const detailsLines: string[] = [];
   const fullTextLines = allItems.map((i) => i.str); // For fallback SWIFT regex if needed
 
   for (const item of dataItems) {
@@ -100,8 +101,23 @@ export async function parseMT103(file: File) {
     }
 
     if (item.x >= colDetailsX - 20) {
-      const match = str.match(/TF-[\d\-]+/i);
-      if (match) invoice_number = match[0].toUpperCase();
+      detailsLines.push(str);
+      if (!invoice_number) {
+        const match = str.match(/TF-[\w\-]+/i);
+        if (match) invoice_number = match[0].toUpperCase();
+      }
+    }
+  }
+
+  // Fallback: search entire PDF text for invoice number if spatial detection missed it
+  if (!invoice_number) {
+    const fullText = fullTextLines.join(" ");
+    const tfMatch = fullText.match(/TF-[\w\-]+/i);
+    if (tfMatch) {
+      invoice_number = tfMatch[0].toUpperCase();
+    } else {
+      const invMatch = fullText.match(/INV[A-Z0-9\-\_]+/i);
+      if (invMatch) invoice_number = invMatch[0].toUpperCase();
     }
   }
 
@@ -124,5 +140,6 @@ export async function parseMT103(file: File) {
     client_name,
     swift_code,
     full_text: fullTextLines.join(" "),
+    details_text: detailsLines.join(" "),
   };
 }

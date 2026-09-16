@@ -88,10 +88,3 @@ export interface DebitAccount {
   created_at?: string;
 }
 
-export interface TransferRow {
-  id: string;
-  vendorId: string | null;
-  amount: string;
-  description: string;
-  transferDate: string;
-}

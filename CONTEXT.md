@@ -173,6 +173,44 @@ NEXT_PUBLIC_SCB_DEBIT_ACCOUNT=<scb-debit-account-number>
 ---
 
 <!-- NEW LOG ENTRIES GO BELOW THIS LINE -->
+### 2026-09-16 13:41 — [Fix PDF Client Name Partial Matching]
+- Modified `src/app/invoice-tools/InvoiceToolsClient.tsx`: Replaced rigid stripped-substring matching with a 3-pass algorithm (exact → word-level fuzzy → full-text fallback).
+- Modified `src/app/invoice-tools/create-invoice/CreateInvoiceClient.tsx`: Applied the same 2-pass (exact → word-level fuzzy) matching for consistency.
+- Noise words like "Ltd", "Inc", "Co", "Private", "Limited" are now ignored during matching so they don't pollute scores.
+- A 60% word-match threshold ensures partial names like "Developer Team" still match even when the PDF extracts "DEVELOPER TEAM LONDON GB".
+
+
+### 2026-09-16 07:02 — [Enrich System Prompt Knowledge Base]
+- Modified `src/app/api/chat/route.ts` to completely rewrite the AI Assistant's knowledge base.
+- Added comprehensive coverage for all CRUD operations in Invoice Tools (Clients, Invoices, Payment Accounts).
+- Added comprehensive coverage for all operations in SCB Tools (Debit Accounts, Vendors, Custom Bulk Transfers, Salary Sheets).
+- Separated instructions logically to ensure the AI knows exactly which page every feature is located on.
+
+
+
+### 2026-09-16 10:52 — [Injected AI Knowledge Base]
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/api/chat/route.ts` — **[MODIFY]** Injected a comprehensive static knowledge base outlining all SOPs (Standard Operating Procedures) for the application directly into the AI's system prompt.
+**Decisions & notes:**
+- User requested that the AI act as an offline-capable instructional guide with immediate access to all workflows.
+- Extracted procedures for generating invoices, Form-C, SCB bulk Excel (salary sheets), and managing clients/vendors/payment accounts.
+
+
+### 2026-09-16 10:48 — [Updated AI Assistant to Instructional Guide]
+**Agent/Dev:** Gemini (Antigravity)
+**Files changed:**
+- `src/app/api/chat/route.ts` — **[MODIFY]** Updated system prompt to restrict AI to providing instructions only. Removed background generative UI tools to prevent automated orchestration.
+**Decisions & notes:**
+- User requested that the AI act strictly as a guide to teach them how to use the admin tools suite rather than attempting to automate the tasks in the background.
+- Stripped out server tools to reduce token usage and enforce the instructional persona.
+
+
+### 2026-09-16 10:00 — [Added AI Assistant Chat Dashboard]
+- **Files Modified:** `src/app/layout.tsx`, `package.json`
+- **Files Created:** `src/components/AiAssistantPopup.tsx`, `src/app/api/chat/route.ts`, `src/components/chat/DownloadInvoiceCard.tsx`, `src/components/chat/DownloadExcelCard.tsx`
+- **Why:** The user requested a conversational AI dashboard using the Vercel AI SDK to orchestrate PDF processing, invoice generation, and SCB Excel bulk generation natively via chat.
+- **Decisions Made:** Used Gemini 1.5 Flash natively with its multi-modal vision properties to read the uploaded PDFs in chat instead of using the custom client-side spatial parser. Generated UI components (Generative UI / Server Tools) return downloadable interactive cards inside the chat window.
 ### 2026-09-15 16:36 — Fix Remaining Native Confirm Modal
 **Agent/Dev:** Gemini (Antigravity)
 **Files changed:**

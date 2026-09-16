@@ -100,11 +100,21 @@ export default function InvoiceToolsClient({
         }
       }
 
-      // Client matching
+      // Client matching — word-level partial match
       let matchedClient: Client | null = null;
       const sortedClients = [...clients].sort((a, b) => b.name.length - a.name.length);
+      const NOISE_WORDS = new Set(["ltd", "llc", "inc", "co", "pvt", "private", "limited", "the", "of", "and"]);
+
+      const wordMatch = (dbName: string, pdfText: string): number => {
+        const dbWords = dbName.toLowerCase().split(/\s+/).filter(w => w.length >= 2 && !NOISE_WORDS.has(w));
+        if (dbWords.length === 0) return 0;
+        const pdfLower = pdfText.toLowerCase();
+        const matched = dbWords.filter(w => pdfLower.includes(w)).length;
+        return matched / dbWords.length;
+      };
 
       if (extractedClientName && extractedClientName.trim().length >= 3) {
+        // Pass 1: exact substring match (stripped)
         const normExtracted = extractedClientName.replace(/[^a-z0-9]/g, "").toLowerCase();
         for (const c of sortedClients) {
           const normDb = c.name.replace(/[^a-z0-9]/g, "").toLowerCase();
@@ -113,15 +123,37 @@ export default function InvoiceToolsClient({
             break;
           }
         }
+
+        // Pass 2: word-level partial match (>=60% of significant words found)
+        if (!matchedClient) {
+          let bestScore = 0;
+          for (const c of sortedClients) {
+            const score = wordMatch(c.name, extractedClientName);
+            if (score >= 0.6 && score > bestScore) {
+              bestScore = score;
+              matchedClient = c;
+            }
+          }
+        }
       }
 
+      // Pass 3: full-text fallback — search entire PDF text
       if (!matchedClient) {
-        const normalizedFullText = completeTextBlob.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normalizedFullText = completeTextBlob.toLowerCase();
+        let bestScore = 0;
         for (const c of sortedClients) {
+          // Stripped substring match
           const normDb = c.name.replace(/[^a-z0-9]/g, "").toLowerCase();
-          if (normDb.length >= 4 && normalizedFullText.includes(normDb)) {
+          const normFull = normalizedFullText.replace(/[^a-z0-9]/g, "");
+          if (normDb.length >= 4 && normFull.includes(normDb)) {
             matchedClient = c;
             break;
+          }
+          // Word-level match on full text
+          const score = wordMatch(c.name, normalizedFullText);
+          if (score >= 0.6 && score > bestScore) {
+            bestScore = score;
+            matchedClient = c;
           }
         }
       }
@@ -130,6 +162,22 @@ export default function InvoiceToolsClient({
       if (!finalInvoiceNumber) {
         const invMatch = completeTextBlob.match(/INV[A-Z0-9\-\_]+/i);
         if (invMatch) finalInvoiceNumber = invMatch[0];
+      }
+
+      // Fallback: search details column text and full PDF text for any known invoice number
+      if (!finalInvoiceNumber) {
+        const detailsText = parsedData.details_text || "";
+        const searchTexts = [detailsText, completeTextBlob];
+        const sortedInvoices = [...invoices].sort((a, b) => (b.invoice_number?.length || 0) - (a.invoice_number?.length || 0));
+        for (const searchText of searchTexts) {
+          for (const inv of sortedInvoices) {
+            if (inv.invoice_number && inv.invoice_number.length >= 3 && searchText.includes(inv.invoice_number)) {
+              finalInvoiceNumber = inv.invoice_number;
+              break;
+            }
+          }
+          if (finalInvoiceNumber) break;
+        }
       }
 
       const matchInv = invoices.find(inv => inv.invoice_number === finalInvoiceNumber);
@@ -172,9 +220,9 @@ export default function InvoiceToolsClient({
 
   const [activeTab, setActiveTab] = useState<ViewTab>("all");
 
-  const filteredInvoices = invoices.filter(
-    (i) => i.client_id === selectedClientId,
-  );
+  const filteredInvoices = invoices
+    .filter((i) => i.client_id === selectedClientId)
+    .sort((a, b) => (b.invoice_date || "").localeCompare(a.invoice_date || ""));
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
   const selectedInvoice = invoices.find((i) => i.id === selectedInvoiceId);

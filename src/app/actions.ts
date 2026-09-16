@@ -1,9 +1,5 @@
 "use server";
 
-import { generateObject } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { z } from "zod";
-
 import { db } from "@/db";
 import { eq, desc, asc, and } from "drizzle-orm";
 import {
@@ -81,14 +77,6 @@ export async function createPaymentAccount(data: Partial<PaymentAccount>) {
   return result;
 }
 
-export async function updatePaymentAccount(id: string, data: Partial<PaymentAccount>) {
-  const [result] = await db
-    .update(paymentAccounts)
-    .set({ ...data, createdAt: undefined } as any)
-    .where(eq(paymentAccounts.id, id))
-    .returning();
-  return result;
-}
 
 export async function deletePaymentAccount(id: string) {
   await db.delete(paymentAccounts).where(eq(paymentAccounts.id, id));
@@ -155,10 +143,6 @@ export async function setDefaultDebitAccount(id: string) {
 }
 
 // -- BANK BRANCHES --
-export async function getBankBranches() {
-  const data = await db.select().from(bankBranches);
-  return data;
-}
 
 export async function getBankNames() {
   const data = await db.selectDistinct({ bankName: bankBranches.bank_name }).from(bankBranches).orderBy(asc(bankBranches.bank_name));
@@ -215,39 +199,3 @@ export async function lookupSwiftCode(swiftCode: string) {
   }
 }
 
-export async function extractInvoiceDataFromText(text: string, existingClientNames?: string[]) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not set in environment variables. Please add it to .env.local to use PDF parsing.");
-  }
-
-  const google = createGoogleGenerativeAI({ apiKey });
-
-  const clientListHint = existingClientNames && existingClientNames.length > 0
-    ? `\n\nIMPORTANT - Here is the list of known client names from our database:\n${existingClientNames.map(n => `- ${n}`).join("\n")}\n\nFor client_name: First check the "Ordering Customer" column in the transfer table. Then check if ANY of the known client names above appear ANYWHERE in the document text (even partially). If a known client name matches, return that exact database name. If no known client matches, return the raw ordering customer name from the document.`
-    : "";
-
-  const result = await generateObject({
-    model: google("gemini-3.6-flash"),
-    schema: z.object({
-      currency: z.string().describe("3-letter currency code e.g. USD, EUR, GBP, BDT"),
-      amount: z.string().describe("Transfer amount as numeric string without commas e.g. 1000.50"),
-      value_date: z.string().describe("Value date in YYYY-MM-DD format"),
-      invoice_number: z.string().describe("The actual invoice/reference ID from the Details column. Extract ONLY the identifier, NOT the word Invoice or any label"),
-      client_name: z.string().describe("The ordering customer / sender company or person name"),
-    }),
-    prompt: `You are parsing an MT103 bank transfer PDF document. Extract structured data from it.
-
-Rules:
-- currency: The 3-letter currency code
-- amount: Numeric string without commas
-- value_date: In YYYY-MM-DD format
-- invoice_number: The actual reference/invoice ID from the "Details" column only — NOT the word "Invoice"
-- client_name: The name from the "Ordering Customer" column. Return ONLY the company/person name, no account numbers or addresses.${clientListHint}
-
-Document text:
-${text}`,
-  });
-
-  return result.object;
-}

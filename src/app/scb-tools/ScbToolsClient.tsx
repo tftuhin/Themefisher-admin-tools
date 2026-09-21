@@ -718,24 +718,13 @@ export default function ScbToolsClient({
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-            <a
-              href="https://s2b.standardchartered.com/unifiedlogin/login/index.html?language=en_AE#/login"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto flex items-center justify-center bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 px-6 py-2.5 rounded-xl transition-colors font-semibold shadow-sm text-sm"
-            >
-              SCB Portal
-              <ExternalLink className="w-4 h-4 ml-2" />
-            </a>
-            <button
-              onClick={handleGenerateExcel}
-              className="w-full sm:w-auto flex items-center justify-center bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-            >
-              <FileSpreadsheet className="w-5 h-5 mr-2" />
-              Generate Excel
-            </button>
-          </div>
+          <button
+            onClick={handleGenerateExcel}
+            className="w-full sm:w-auto flex items-center justify-center bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
+          >
+            <FileSpreadsheet className="w-5 h-5 mr-2" />
+            Generate Excel
+          </button>
         </div>
       </div>
 
@@ -1114,6 +1103,19 @@ export default function ScbToolsClient({
           </div>
         </Modal>
       )}
+
+      {/* Footer Quick Link */}
+      <div className="text-center pt-8 pb-4">
+        <a
+          href="https://s2b.standardchartered.com/unifiedlogin/login/index.html?language=en_AE#/login"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-[#0066b3] transition-colors hover:underline"
+        >
+          Open SCB Straight2Bank Portal
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </div>
     </div>
   );
 }

@@ -18,6 +18,8 @@ import {
   Download,
   ArrowRight,
   Layers,
+  ExternalLink,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
@@ -77,6 +79,9 @@ export default function ScbToolsClient({
   const [employeeSalaryRows, setEmployeeSalaryRows] = useState<EmployeeSalaryRow[]>([]);
   const [additionalSalaryRows, setAdditionalSalaryRows] = useState<AdditionalSalaryRow[]>([]);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+
+  // SCB Popup State
+  const [showScbPopup, setShowScbPopup] = useState(false);
 
   // Automatically set default debit accounts from props on load
   useEffect(() => {
@@ -301,6 +306,8 @@ export default function ScbToolsClient({
 
     const fileName = `SCB_Transfers_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`;
     XLSX.writeFile(workbook, fileName);
+    
+    setShowScbPopup(true);
   };
 
   // Salary Sheet Actions
@@ -455,6 +462,7 @@ export default function ScbToolsClient({
     XLSX.writeFile(workbook, fileName);
 
     setShowSalaryModal(false);
+    setShowScbPopup(true);
     setBannerMessage(
       `Successfully generated salary sheet Excel for ${combinedExcelData.length} transactions (Total: ৳${grandTotalPayout.toLocaleString()})!`
     );
@@ -1065,6 +1073,36 @@ export default function ScbToolsClient({
         description="Are you sure you want to clear all transfer entries? This action cannot be undone."
         itemName="All Transfer Entries"
       />
+      {/* SCB Upload Notification Modal */}
+      {showScbPopup && (
+        <Modal 
+          isOpen={showScbPopup} 
+          onClose={() => setShowScbPopup(false)} 
+          title="Action Required"
+        >
+          <div className="p-6 text-center space-y-4">
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Excel Generated!</h3>
+            <p className="text-gray-600">
+              Your bulk transfer Excel file has been downloaded. Please proceed to the Standard Chartered Straight2Bank dashboard to upload it.
+            </p>
+            <div className="pt-4">
+              <a 
+                href="https://s2b.standardchartered.com/unifiedlogin/login/index.html?language=en_AE#/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowScbPopup(false)}
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0066b3] text-white font-medium rounded-xl hover:bg-[#005596] transition-colors w-full sm:w-auto"
+              >
+                Go to SCB Dashboard
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

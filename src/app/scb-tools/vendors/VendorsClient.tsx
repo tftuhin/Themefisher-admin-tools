@@ -35,6 +35,7 @@ export default function VendorsClient({ initialVendors }: { initialVendors: Vend
   const [activeTab, setActiveTab] = useState<"all" | "employees" | "others" | "hidden">("all");
   const [duplicateVendor, setDuplicateVendor] = useState<Vendor | null>(null);
   const [duplicatePendingPayload, setDuplicatePendingPayload] = useState<any>(null);
+  const [inlineDuplicateWarning, setInlineDuplicateWarning] = useState<string | null>(null);
 
   // Add Form state
   const [formData, setFormData] = useState({
@@ -136,6 +137,20 @@ export default function VendorsClient({ initialVendors }: { initialVendors: Vend
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleNameBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const val = e.target.value.trim().toLowerCase();
+    if (!val) {
+      setInlineDuplicateWarning(null);
+      return;
+    }
+    const exactMatch = vendors.find((v) => v.receiver_name.toLowerCase() === val);
+    if (exactMatch) {
+      setInlineDuplicateWarning(`Duplicate: An account with this name already exists (${exactMatch.account_number}).`);
+    } else {
+      setInlineDuplicateWarning(null);
+    }
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,7 +450,7 @@ export default function VendorsClient({ initialVendors }: { initialVendors: Vend
           onSubmit={handleSubmit}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4"
         >
-          <div>
+          <div className="relative">
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Receiver / Employee Name *
             </label>
@@ -445,9 +460,16 @@ export default function VendorsClient({ initialVendors }: { initialVendors: Vend
               name="receiver_name"
               value={formData.receiver_name}
               onChange={handleChange}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              onBlur={handleNameBlur}
+              className={`w-full border rounded-xl px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 transition-colors ${inlineDuplicateWarning ? 'border-orange-400 bg-orange-50' : 'border-slate-200'}`}
               placeholder="e.g. John Doe"
             />
+            {inlineDuplicateWarning && (
+              <p className="absolute -bottom-5 left-1 text-[11px] font-medium text-orange-600 flex items-center gap-1 whitespace-nowrap">
+                <AlertTriangle className="w-3 h-3" />
+                {inlineDuplicateWarning}
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">

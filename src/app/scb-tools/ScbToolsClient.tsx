@@ -521,11 +521,20 @@ export default function ScbToolsClient({
         </div>
 
         {/* Action Header Button: Create Salary Sheet */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <a
+            href="https://s2b.standardchartered.com/unifiedlogin/login/index.html?language=en_AE#/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 bg-[#0066b3] hover:bg-[#005596] text-white px-4 sm:px-5 py-2.5 rounded-xl font-semibold shadow-sm transition-all text-sm shrink-0 cursor-pointer w-full sm:w-auto"
+          >
+            SCB Portal
+            <ExternalLink className="w-4 h-4" />
+          </a>
           <button
             type="button"
             onClick={handleOpenSalaryModal}
-            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 sm:px-5 py-2.5 rounded-xl font-semibold shadow-sm transition-all text-sm shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 sm:px-5 py-2.5 rounded-xl font-semibold shadow-sm transition-all text-sm shrink-0 cursor-pointer w-full sm:w-auto"
           >
             <Briefcase className="w-4 h-4" />
             <span>Create Salary Sheet</span>
